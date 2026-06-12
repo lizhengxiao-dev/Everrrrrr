@@ -26,8 +26,10 @@ public static class MicroNodeActivationGenerator
         EnsureFolder(PinchSpritesFolder + "/Male");
         EnsureFolder(PinchSpritesFolder + "/Female");
 
-        AnimatorController maleController = BuildRobotController("Male");
-        AnimatorController femaleController = BuildRobotController("Female");
+        List<Sprite> malePinchSprites = GetSprites(PinchSpritesFolder + "/Male");
+        List<Sprite> femalePinchSprites = GetSprites(PinchSpritesFolder + "/Female");
+        AnimatorController maleController = BuildRobotController("Male", malePinchSprites);
+        AnimatorController femaleController = BuildRobotController("Female", femalePinchSprites);
 
         Scene sourceScene = EditorSceneManager.OpenScene(SourceScenePath, OpenSceneMode.Single);
         EditorSceneManager.SaveScene(sourceScene, TargetScenePath, true);
@@ -35,7 +37,7 @@ public static class MicroNodeActivationGenerator
 
         DisableOldGameplay();
         ConfigureMedicalBackground();
-        ConfigureRobots(maleController, femaleController);
+        ConfigureRobots(maleController, femaleController, malePinchSprites, femalePinchSprites);
         ConfigureHandInput();
         ConfigureHudAndManager();
         EnsureSceneInBuildSettings();
@@ -58,7 +60,7 @@ public static class MicroNodeActivationGenerator
         }
     }
 
-    private static AnimatorController BuildRobotController(string gender)
+    private static AnimatorController BuildRobotController(string gender, List<Sprite> pinchSprites)
     {
         string idleClipPath = "Assets/NewRobotGame/" + gender + "_Idle.anim";
         AnimationClip idleClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(idleClipPath);
@@ -68,7 +70,6 @@ public static class MicroNodeActivationGenerator
         }
 
         string precisionClipPath = GeneratedFolder + "/" + gender + "_PrecisionActivate.anim";
-        List<Sprite> pinchSprites = GetSprites(PinchSpritesFolder + "/" + gender);
         List<Sprite> fallbackSprites = GetSprites("Assets/NewRobotGame/" + gender + "/Push");
         AnimationClip precisionClip = CreatePrecisionClip(
             precisionClipPath,
@@ -227,14 +228,19 @@ public static class MicroNodeActivationGenerator
         EditorUtility.SetDirty(background);
     }
 
-    private static void ConfigureRobots(AnimatorController maleController, AnimatorController femaleController)
+    private static void ConfigureRobots(
+        AnimatorController maleController,
+        AnimatorController femaleController,
+        List<Sprite> malePinchSprites,
+        List<Sprite> femalePinchSprites)
     {
         ConfigureRobot(
             FindSceneObject("Male0001"),
             maleController,
             "Male_Idle",
             "Male_PrecisionActivate",
-            new Vector3(1.55f, 0.7f, -0.08f)
+            new Vector3(1.55f, 0.7f, -0.08f),
+            malePinchSprites
         );
 
         ConfigureRobot(
@@ -242,7 +248,8 @@ public static class MicroNodeActivationGenerator
             femaleController,
             "Female_Idle",
             "Female_PrecisionActivate",
-            new Vector3(1.35f, 0.72f, -0.08f)
+            new Vector3(1.35f, 0.72f, -0.08f),
+            femalePinchSprites
         );
 
         GameObject male = FindSceneObject("Male0001");
@@ -263,7 +270,8 @@ public static class MicroNodeActivationGenerator
         RuntimeAnimatorController controller,
         string idleState,
         string precisionState,
-        Vector3 fingertipPosition)
+        Vector3 fingertipPosition,
+        List<Sprite> gestureSprites)
     {
         if (robot == null)
         {
@@ -295,6 +303,8 @@ public static class MicroNodeActivationGenerator
 
         feedback.idleStateName = idleState;
         feedback.precisionStateName = precisionState;
+        feedback.useGestureSynchronizedSprites = gestureSprites != null && gestureSprites.Count > 0;
+        feedback.gestureSprites = gestureSprites != null ? gestureSprites.ToArray() : Array.Empty<Sprite>();
         feedback.fingertipGlowLocalPosition = fingertipPosition;
         feedback.sortingOrder = 165;
         EditorUtility.SetDirty(robot);

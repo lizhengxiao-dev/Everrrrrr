@@ -6,22 +6,60 @@ public class MicroNodeRobotFeedback : MonoBehaviour
 {
     public string idleStateName = "Male_Idle";
     public string precisionStateName = "Male_PrecisionActivate";
+    public bool useGestureSynchronizedSprites = true;
+    public Sprite[] gestureSprites;
+    public HandTracker handTracker;
+    public float pinchAdvanceSpeed = 28f;
+    public float releaseAdvanceSpeed = 24f;
     public Vector3 fingertipGlowLocalPosition = new Vector3(1.55f, 0.7f, -0.08f);
     public int sortingOrder = 165;
 
     private Animator animator;
+    private SpriteRenderer spriteRenderer;
     private Transform glowRoot;
     private SpriteRenderer glowRenderer;
     private GameObject travelingBurst;
     private Coroutine feedbackRoutine;
+    private float gesture01;
     private static Sprite glowSprite;
 
     private void Awake()
     {
         animator = GetComponent<Animator>();
-        KeepRobotIdle();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        if (handTracker == null)
+        {
+            handTracker = Object.FindFirstObjectByType<HandTracker>();
+        }
+        if (UseGestureSprites())
+        {
+            gesture01 = 0f;
+            if (animator != null)
+            {
+                animator.enabled = false;
+            }
+            ApplyGestureFrame();
+        }
+        else
+        {
+            KeepRobotIdle();
+        }
         EnsureGlow();
         SetGlowAlpha(0f);
+    }
+
+    private void Update()
+    {
+        if (!UseGestureSprites())
+        {
+            return;
+        }
+
+        bool isPinching = handTracker != null && handTracker.HasRecentMessage() && handTracker.IsPinching();
+        float target = isPinching ? 1f : 0f;
+        float speed = isPinching ? pinchAdvanceSpeed : releaseAdvanceSpeed;
+        gesture01 = Mathf.MoveTowards(gesture01, target, Mathf.Max(1f, speed) * Time.deltaTime);
+        ApplyGestureFrame();
     }
 
     public void PlayActivation(Vector3 capturedNodeWorldPosition)
@@ -48,7 +86,7 @@ public class MicroNodeRobotFeedback : MonoBehaviour
 
     private IEnumerator ActivationRoutine(Vector3 capturedNodeWorldPosition)
     {
-        float precisionDuration = PlayPrecisionState();
+        float precisionDuration = UseGestureSprites() ? 0f : PlayPrecisionState();
 
         travelingBurst = new GameObject("MicroNode_EnergyBurst");
         SpriteRenderer burstRenderer = travelingBurst.AddComponent<SpriteRenderer>();
@@ -120,8 +158,38 @@ public class MicroNodeRobotFeedback : MonoBehaviour
             return;
         }
 
+        if (!animator.enabled)
+        {
+            animator.enabled = true;
+        }
         animator.speed = 1f;
         animator.Play(idleStateName, 0, 0f);
+    }
+
+    private bool UseGestureSprites()
+    {
+        return useGestureSynchronizedSprites
+            && spriteRenderer != null
+            && gestureSprites != null
+            && gestureSprites.Length > 0;
+    }
+
+    private void ApplyGestureFrame()
+    {
+        if (!UseGestureSprites())
+        {
+            return;
+        }
+
+        int index = Mathf.Clamp(
+            Mathf.RoundToInt(gesture01 * (gestureSprites.Length - 1)),
+            0,
+            gestureSprites.Length - 1
+        );
+        if (gestureSprites[index] != null)
+        {
+            spriteRenderer.sprite = gestureSprites[index];
+        }
     }
 
     private float GetAnimationClipLength(string clipName)
