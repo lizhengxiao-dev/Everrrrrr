@@ -696,6 +696,7 @@ public static class MicroNodeActivationGenerator
         {
             animator = panel.AddComponent<MicroNodeIntroAnimator>();
         }
+        animator.enabled = false;
 
         RectTransform panelRect = panel.GetComponent<RectTransform>();
         panelRect.anchorMin = new Vector2(0.5f, 0.5f);
@@ -705,37 +706,19 @@ public static class MicroNodeActivationGenerator
         panelRect.sizeDelta = new Vector2(960f, 210f);
 
         Image image = panel.GetComponent<Image>();
-        image.color = new Color32(5, 20, 34, 232);
+        image.sprite = LoadSprite(PrecisionRestoredArtworkPath);
+        image.preserveAspect = false;
+        image.color = Color.white;
         image.raycastTarget = false;
 
         Outline outline = panel.GetComponent<Outline>();
-        outline.effectColor = new Color32(255, 65, 105, 190);
-        outline.effectDistance = new Vector2(3f, -3f);
+        outline.enabled = false;
 
-        Text title = EnsureHeaderText(
-            panel.transform,
-            "Text_StoryTitle",
-            "PRECISION SYSTEM // LAST POWER CELLS",
-            new Vector2(0f, 50f),
-            new Vector2(880f, 52f),
-            34,
-            TextAnchor.MiddleCenter,
-            new Color32(255, 96, 125, 255)
-        );
-
-        Text body = EnsureHeaderText(
-            panel.transform,
-            "Text_StoryBody",
-            "TINY NODES ARE FADING // PINCH TO RESTORE FINGER CONTROL",
-            new Vector2(0f, -31f),
-            new Vector2(860f, 64f),
-            22,
-            TextAnchor.MiddleCenter,
-            new Color32(98, 238, 255, 255)
-        );
-
-        animator.titleText = title;
-        animator.bodyText = body;
+        DestroyChild(panel.transform, "Text_StoryTitle");
+        DestroyChild(panel.transform, "Text_StoryBody");
+        DestroyChild(panel.transform, "IntroScanLine");
+        animator.titleText = null;
+        animator.bodyText = null;
         EditorUtility.SetDirty(animator);
 
         return panel;
