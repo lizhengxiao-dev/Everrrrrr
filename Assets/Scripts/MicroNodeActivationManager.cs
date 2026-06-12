@@ -52,6 +52,14 @@ public class MicroNodeActivationManager : MonoBehaviour
     public GameObject gameClearPanel;
     public GameObject gameOverPanel;
 
+    [Header("Runtime World UI Tuning")]
+    public Vector2 titleFrameOffset = Vector2.zero;
+    [Range(0.65f, 1.45f)] public float titleFrameScale = 1f;
+    [Range(0.65f, 1.65f)] public float titleFontScale = 1f;
+    public Vector2 nodeStatusPanelOffset = Vector2.zero;
+    [Range(0.65f, 1.45f)] public float nodeStatusPanelScale = 1f;
+    [Range(0.65f, 1.65f)] public float nodeStatusFontScale = 1f;
+
     [Header("Robots")]
     public GameObject maleRobot;
     public GameObject femaleRobot;
@@ -697,9 +705,9 @@ public class MicroNodeActivationManager : MonoBehaviour
             frame = new GameObject("MicroNode_TopTitleFrame_World");
         }
 
-        frame.transform.position = GetTitleFrameWorldPosition();
+        frame.transform.position = GetTitleFrameWorldPosition() + new Vector3(titleFrameOffset.x, titleFrameOffset.y, 0f);
         frame.transform.rotation = Quaternion.identity;
-        frame.transform.localScale = Vector3.one;
+        frame.transform.localScale = Vector3.one * titleFrameScale;
 
         SpriteRenderer frameRenderer = frame.GetComponent<SpriteRenderer>();
         if (frameRenderer != null)
@@ -708,13 +716,13 @@ public class MicroNodeActivationManager : MonoBehaviour
         }
         EnsureWorldBlock(frame.transform, "TitleFrame_Backplate", Vector3.zero, new Vector3(5.2f, 1.24f, 1f), new Color32(8, 9, 14, 215), 220);
 
-        EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameTitle", "MICRO NODE ACTIVATION", new Vector3(0f, 0.36f, -0.02f), 0.038f, TextAnchor.MiddleCenter, new Color32(230, 232, 240, 255), 230);
-        EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameSubtitle", "Precision System (Fingers)", new Vector3(0f, 0.12f, -0.02f), 0.021f, TextAnchor.MiddleCenter, new Color32(185, 190, 206, 255), 230);
-        EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameTimeLabel", "TIME REMAINING", new Vector3(-1.7f, -0.22f, -0.02f), 0.017f, TextAnchor.MiddleLeft, new Color32(150, 156, 174, 255), 230);
-        EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameRoundLabel", "ROUND", new Vector3(1.74f, -0.22f, -0.02f), 0.017f, TextAnchor.MiddleLeft, new Color32(150, 156, 174, 255), 230);
+        EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameTitle", "MICRO NODE ACTIVATION", new Vector3(0f, 0.36f, -0.02f), 0.038f * titleFontScale, TextAnchor.MiddleCenter, new Color32(230, 232, 240, 255), 230);
+        EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameSubtitle", "Precision System (Fingers)", new Vector3(0f, 0.12f, -0.02f), 0.021f * titleFontScale, TextAnchor.MiddleCenter, new Color32(185, 190, 206, 255), 230);
+        EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameTimeLabel", "TIME REMAINING", new Vector3(-1.7f, -0.22f, -0.02f), 0.017f * titleFontScale, TextAnchor.MiddleLeft, new Color32(150, 156, 174, 255), 230);
+        EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameRoundLabel", "ROUND", new Vector3(1.74f, -0.22f, -0.02f), 0.017f * titleFontScale, TextAnchor.MiddleLeft, new Color32(150, 156, 174, 255), 230);
 
-        titleFrameTimerText = EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameTimer", "00:00", new Vector3(-1.7f, -0.46f, -0.02f), 0.036f, TextAnchor.MiddleLeft, new Color32(238, 239, 246, 255), 231);
-        titleFrameRoundText = EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameRound", "1/3", new Vector3(1.74f, -0.46f, -0.02f), 0.036f, TextAnchor.MiddleLeft, new Color32(238, 239, 246, 255), 231);
+        titleFrameTimerText = EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameTimer", "00:00", new Vector3(-1.7f, -0.46f, -0.02f), 0.036f * titleFontScale, TextAnchor.MiddleLeft, new Color32(238, 239, 246, 255), 231);
+        titleFrameRoundText = EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameRound", "1/3", new Vector3(1.74f, -0.46f, -0.02f), 0.036f * titleFontScale, TextAnchor.MiddleLeft, new Color32(238, 239, 246, 255), 231);
     }
 
     private void EnsureNodeStatusPanel()
@@ -725,9 +733,9 @@ public class MicroNodeActivationManager : MonoBehaviour
             panel = new GameObject("MicroNode_NodeStatusPanel_World");
         }
 
-        panel.transform.position = GetNodeStatusPanelWorldPosition();
+        panel.transform.position = GetNodeStatusPanelWorldPosition() + new Vector3(nodeStatusPanelOffset.x, nodeStatusPanelOffset.y, 0f);
         panel.transform.rotation = Quaternion.identity;
-        panel.transform.localScale = Vector3.one;
+        panel.transform.localScale = Vector3.one * nodeStatusPanelScale;
 
         SpriteRenderer rootRenderer = panel.GetComponent<SpriteRenderer>();
         if (rootRenderer != null)
@@ -736,13 +744,13 @@ public class MicroNodeActivationManager : MonoBehaviour
         }
 
         EnsureWorldBlock(panel.transform, "NodeStatus_Backplate", Vector3.zero, new Vector3(1.76f, 1.42f, 1f), new Color32(8, 9, 14, 218), 220);
-        EnsureWorldFrameText(panel.transform, "Text_NodeStatusLabel", "NODES COLLECTED", new Vector3(0f, 0.49f, -0.03f), 0.016f, TextAnchor.MiddleCenter, new Color32(137, 168, 192, 255), 231);
-        nodeStatusCounterText = EnsureWorldFrameText(panel.transform, "Text_NodeStatusCounter", "0 / 20", new Vector3(0f, 0.27f, -0.03f), 0.036f, TextAnchor.MiddleCenter, new Color32(235, 237, 244, 255), 232);
+        EnsureWorldFrameText(panel.transform, "Text_NodeStatusLabel", "NODES COLLECTED", new Vector3(0f, 0.49f, -0.03f), 0.016f * nodeStatusFontScale, TextAnchor.MiddleCenter, new Color32(137, 168, 192, 255), 231);
+        nodeStatusCounterText = EnsureWorldFrameText(panel.transform, "Text_NodeStatusCounter", "0 / 20", new Vector3(0f, 0.27f, -0.03f), 0.036f * nodeStatusFontScale, TextAnchor.MiddleCenter, new Color32(235, 237, 244, 255), 232);
 
         EnsureWorldBlock(panel.transform, "NodeStatus_ProgressTrack", new Vector3(0f, 0.06f, -0.03f), new Vector3(1.2f, 0.12f, 1f), new Color32(17, 28, 42, 235), 231);
         nodeStatusFillTransform = EnsureWorldBlock(panel.transform, "NodeStatus_ProgressFill", new Vector3(-0.57f, 0.06f, -0.04f), new Vector3(0.02f, 0.12f, 1f), new Color32(116, 228, 76, 255), 232).transform;
 
-        EnsureWorldFrameText(panel.transform, "Text_SystemPowerLabel", "SYSTEM POWER", new Vector3(0f, -0.26f, -0.03f), 0.016f, TextAnchor.MiddleCenter, new Color32(137, 168, 192, 255), 231);
+        EnsureWorldFrameText(panel.transform, "Text_SystemPowerLabel", "SYSTEM POWER", new Vector3(0f, -0.26f, -0.03f), 0.016f * nodeStatusFontScale, TextAnchor.MiddleCenter, new Color32(137, 168, 192, 255), 231);
 
         const int barCount = 13;
         if (systemPowerBars == null || systemPowerBars.Length != barCount)
