@@ -15,12 +15,16 @@ public static class MicroNodeActivationGenerator
     private const string SourceScenePath = "Assets/Shared/Try/Pulse Defense Matrix.unity";
     private const string TargetScenePath = "Assets/Shared/Try/MicroNodeActivation.unity";
     private const string GeneratedFolder = "Assets/MicroNodeActivation";
+    private const string PinchSpritesFolder = GeneratedFolder + "/PinchSprites";
     private const string BackgroundPath = "Assets/MedicalRoom_Background.png";
 
     [MenuItem("EverMotion/Micro Node Activation - Build Scene")]
     public static void BuildScene()
     {
         EnsureFolder(GeneratedFolder);
+        EnsureFolder(PinchSpritesFolder);
+        EnsureFolder(PinchSpritesFolder + "/Male");
+        EnsureFolder(PinchSpritesFolder + "/Female");
 
         AnimatorController maleController = BuildRobotController("Male");
         AnimatorController femaleController = BuildRobotController("Female");
@@ -64,10 +68,12 @@ public static class MicroNodeActivationGenerator
         }
 
         string precisionClipPath = GeneratedFolder + "/" + gender + "_PrecisionActivate.anim";
+        List<Sprite> pinchSprites = GetSprites(PinchSpritesFolder + "/" + gender);
+        List<Sprite> fallbackSprites = GetSprites("Assets/NewRobotGame/" + gender + "/Push");
         AnimationClip precisionClip = CreatePrecisionClip(
             precisionClipPath,
             gender + "_PrecisionActivate",
-            GetSprites("Assets/NewRobotGame/" + gender + "/Push")
+            pinchSprites.Count > 0 ? pinchSprites : fallbackSprites
         );
 
         string controllerPath = GeneratedFolder + "/" + gender + "_MicroNode.controller";
@@ -705,7 +711,11 @@ public static class MicroNodeActivationGenerator
         string[] guids = AssetDatabase.FindAssets("t:Texture2D", new[] { folder });
         return guids
             .Select(AssetDatabase.GUIDToAssetPath)
-            .Where(path => path.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            .Where(path =>
+                path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+                || path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+                || path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+            )
             .OrderBy(GetTrailingNumber)
             .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
             .Select(path =>

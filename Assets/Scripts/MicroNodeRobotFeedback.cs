@@ -48,6 +48,8 @@ public class MicroNodeRobotFeedback : MonoBehaviour
 
     private IEnumerator ActivationRoutine(Vector3 capturedNodeWorldPosition)
     {
+        float precisionDuration = PlayPrecisionState();
+
         travelingBurst = new GameObject("MicroNode_EnergyBurst");
         SpriteRenderer burstRenderer = travelingBurst.AddComponent<SpriteRenderer>();
         burstRenderer.sprite = GetGlowSprite();
@@ -88,9 +90,27 @@ public class MicroNodeRobotFeedback : MonoBehaviour
 
         SetGlowAlpha(0f);
 
+        float visibleFeedbackDuration = travelDuration + flareDuration;
+        if (precisionDuration > visibleFeedbackDuration)
+        {
+            yield return new WaitForSeconds(precisionDuration - visibleFeedbackDuration);
+        }
+
         KeepRobotIdle();
 
         feedbackRoutine = null;
+    }
+
+    private float PlayPrecisionState()
+    {
+        if (animator == null || string.IsNullOrEmpty(precisionStateName) || !HasAnimatorState(animator, precisionStateName))
+        {
+            return 0f;
+        }
+
+        animator.speed = 1f;
+        animator.CrossFade(precisionStateName, 0.04f, 0, 0f);
+        return Mathf.Max(0.35f, GetAnimationClipLength(precisionStateName));
     }
 
     private void KeepRobotIdle()
@@ -102,6 +122,31 @@ public class MicroNodeRobotFeedback : MonoBehaviour
 
         animator.speed = 1f;
         animator.Play(idleStateName, 0, 0f);
+    }
+
+    private float GetAnimationClipLength(string clipName)
+    {
+        if (animator == null || animator.runtimeAnimatorController == null || string.IsNullOrEmpty(clipName))
+        {
+            return 0f;
+        }
+
+        AnimationClip[] clips = animator.runtimeAnimatorController.animationClips;
+        for (int i = 0; i < clips.Length; i++)
+        {
+            AnimationClip clip = clips[i];
+            if (clip != null && clip.name == clipName)
+            {
+                return clip.length;
+            }
+        }
+
+        return 0f;
+    }
+
+    private static bool HasAnimatorState(Animator targetAnimator, string stateName)
+    {
+        return targetAnimator != null && !string.IsNullOrEmpty(stateName) && targetAnimator.HasState(0, Animator.StringToHash(stateName));
     }
 
     private void EnsureGlow()
