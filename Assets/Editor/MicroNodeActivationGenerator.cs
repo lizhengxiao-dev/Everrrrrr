@@ -18,6 +18,9 @@ public static class MicroNodeActivationGenerator
     private const string PinchSpritesFolder = GeneratedFolder + "/PinchSprites";
     private const string BackgroundPath = "Assets/MedicalRoom_Background.png";
     private const string EndDialogueArtworkPath = GeneratedFolder + "/EndDialogueFull.png";
+    private const string PrecisionHeaderArtworkPath = GeneratedFolder + "/PrecisionHeaderFull.png";
+    private const string PrecisionRestoredArtworkPath = GeneratedFolder + "/PrecisionRestoredPanel.png";
+    private const string BottomHudArtworkPath = GeneratedFolder + "/BottomHudFull.png";
     private const string EndDialogueMessage = "\"Thank you... I can feel my fingers responding again. Keep going - we're making progress!\"";
 
     [MenuItem("EverMotion/Micro Node Activation - Build Scene")]
@@ -420,6 +423,7 @@ public static class MicroNodeActivationGenerator
         GameObject clearPanel = EnsureEndPanel(canvas.transform, "Panel_GameClear", "PRECISION RESTORED", new Color32(0, 255, 255, 205));
         DestroySceneObject("Panel_GameOver");
         Image[] roundIndicators = EnsurePrecisionHeader(canvas.transform);
+        EnsureBottomHud(canvas.transform);
         GameObject storyPanel = EnsureStoryPanel(canvas.transform);
         CanvasGroup roundTransition = EnsureRoundTransition(canvas.transform);
         clearPanel.SetActive(false);
@@ -438,7 +442,7 @@ public static class MicroNodeActivationGenerator
 
         manager.roundCount = 3;
         manager.roundDuration = 60f;
-        manager.requiredCaptures = 18;
+        manager.requiredCaptures = 20;
         manager.baseNodeLifetime = 18f;
         manager.disappearSpeedMultiplier = 1.5f;
         manager.activeNodeCount = 3;
@@ -505,24 +509,27 @@ public static class MicroNodeActivationGenerator
         headerRect.anchorMin = new Vector2(0.5f, 1f);
         headerRect.anchorMax = new Vector2(0.5f, 1f);
         headerRect.pivot = new Vector2(0.5f, 1f);
-        headerRect.anchoredPosition = new Vector2(0f, -24f);
-        headerRect.sizeDelta = new Vector2(920f, 76f);
+        headerRect.anchoredPosition = new Vector2(0f, -18f);
+        headerRect.sizeDelta = new Vector2(1020f, 180f);
 
         Image headerImage = header.GetComponent<Image>();
-        headerImage.color = new Color32(5, 21, 34, 218);
+        headerImage.sprite = LoadSprite(PrecisionHeaderArtworkPath);
+        headerImage.preserveAspect = true;
+        headerImage.color = Color.white;
         headerImage.raycastTarget = false;
 
         Outline headerOutline = header.GetComponent<Outline>();
-        headerOutline.effectColor = new Color32(0, 220, 255, 150);
-        headerOutline.effectDistance = new Vector2(2f, -2f);
+        headerOutline.effectColor = new Color32(0, 220, 255, 0);
+        headerOutline.effectDistance = Vector2.zero;
+        headerOutline.enabled = false;
 
         EnsureHeaderText(
             header.transform,
             "Text_PrecisionTitle",
             "PRECISION SYSTEM",
-            new Vector2(-300f, 11f),
-            new Vector2(270f, 34f),
-            25,
+            new Vector2(-322f, -6f),
+            new Vector2(330f, 52f),
+            27,
             TextAnchor.MiddleLeft,
             new Color32(225, 249, 255, 255)
         );
@@ -531,9 +538,9 @@ public static class MicroNodeActivationGenerator
             header.transform,
             "Text_Round",
             "ROUND 1 / 3",
-            new Vector2(0f, 11f),
-            new Vector2(230f, 34f),
-            23,
+            new Vector2(0f, -4f),
+            new Vector2(260f, 58f),
+            31,
             TextAnchor.MiddleCenter,
             new Color32(255, 255, 255, 255)
         );
@@ -542,9 +549,9 @@ public static class MicroNodeActivationGenerator
             header.transform,
             "Text_PrecisionStatus",
             "AWAITING HAND LINK",
-            new Vector2(295f, 11f),
-            new Vector2(280f, 34f),
-            19,
+            new Vector2(322f, -6f),
+            new Vector2(340f, 52f),
+            25,
             TextAnchor.MiddleRight,
             new Color32(255, 200, 64, 255)
         );
@@ -563,8 +570,8 @@ public static class MicroNodeActivationGenerator
             indicatorRect.anchorMin = new Vector2(0.5f, 0.5f);
             indicatorRect.anchorMax = new Vector2(0.5f, 0.5f);
             indicatorRect.pivot = new Vector2(0.5f, 0.5f);
-            indicatorRect.anchoredPosition = new Vector2((i - 1) * 62f, -22f);
-            indicatorRect.sizeDelta = new Vector2(48f, 6f);
+            indicatorRect.anchoredPosition = new Vector2((i - 1) * 72f, -56f);
+            indicatorRect.sizeDelta = new Vector2(58f, 8f);
 
             indicators[i] = indicatorObject.GetComponent<Image>();
             indicators[i].raycastTarget = false;
@@ -574,6 +581,95 @@ public static class MicroNodeActivationGenerator
         }
 
         return indicators;
+    }
+
+    private static void EnsureBottomHud(Transform canvas)
+    {
+        GameObject hud = FindSceneObject("MicroNode_BottomHudFull");
+        if (hud == null)
+        {
+            hud = new GameObject("MicroNode_BottomHudFull", typeof(RectTransform), typeof(Image));
+            hud.transform.SetParent(canvas, false);
+        }
+
+        RectTransform hudRect = hud.GetComponent<RectTransform>();
+        hudRect.anchorMin = new Vector2(0.5f, 0f);
+        hudRect.anchorMax = new Vector2(0.5f, 0f);
+        hudRect.pivot = new Vector2(0.5f, 0f);
+        hudRect.anchoredPosition = new Vector2(0f, 12f);
+        hudRect.sizeDelta = new Vector2(1030f, 216f);
+
+        Image hudImage = hud.GetComponent<Image>();
+        hudImage.sprite = LoadSprite(BottomHudArtworkPath);
+        hudImage.preserveAspect = true;
+        hudImage.color = Color.white;
+        hudImage.raycastTarget = false;
+
+        PositionHudText(hud.transform, "Text_Timer", new Vector2(-386f, 92f), new Vector2(180f, 58f), 30, TextAnchor.MiddleCenter);
+        PositionHudText(hud.transform, "Text_TargetCounter", new Vector2(380f, 92f), new Vector2(230f, 58f), 28, TextAnchor.MiddleCenter);
+        Text energyLabel = PositionHudText(hud.transform, "Text_EnergyLabel", new Vector2(0f, 68f), new Vector2(260f, 38f), 17, TextAnchor.MiddleCenter);
+        if (energyLabel != null)
+        {
+            energyLabel.text = "ROBOT CHARGE";
+        }
+
+        Slider energyBar = FindSceneComponent<Slider>("EnergyBar");
+        if (energyBar != null)
+        {
+            energyBar.transform.SetParent(hud.transform, false);
+            RectTransform barRect = energyBar.GetComponent<RectTransform>();
+            barRect.anchorMin = new Vector2(0.5f, 0.5f);
+            barRect.anchorMax = new Vector2(0.5f, 0.5f);
+            barRect.pivot = new Vector2(0.5f, 0.5f);
+            barRect.anchoredPosition = new Vector2(0f, 22f);
+            barRect.sizeDelta = new Vector2(410f, 18f);
+
+            Image background = energyBar.GetComponentInChildren<Image>();
+            if (background != null)
+            {
+                background.color = new Color32(4, 18, 12, 220);
+            }
+            if (energyBar.fillRect != null)
+            {
+                Image fill = energyBar.fillRect.GetComponent<Image>();
+                if (fill != null)
+                {
+                    fill.color = new Color32(52, 255, 96, 230);
+                }
+            }
+        }
+
+        hud.transform.SetAsLastSibling();
+    }
+
+    private static Text PositionHudText(Transform hud, string name, Vector2 position, Vector2 size, int fontSize, TextAnchor anchor)
+    {
+        Text text = FindSceneComponent<Text>(name);
+        if (text == null)
+        {
+            GameObject textObject = new GameObject(name, typeof(RectTransform), typeof(Text));
+            textObject.transform.SetParent(hud, false);
+            text = textObject.GetComponent<Text>();
+        }
+        else
+        {
+            text.transform.SetParent(hud, false);
+        }
+
+        RectTransform rect = text.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+
+        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        text.fontSize = fontSize;
+        text.fontStyle = FontStyle.Bold;
+        text.alignment = anchor;
+        text.color = new Color32(221, 250, 255, 255);
+        text.raycastTarget = false;
+        return text;
     }
 
     private static GameObject EnsureStoryPanel(Transform canvas)
@@ -794,8 +890,8 @@ public static class MicroNodeActivationGenerator
 
         dialogue.speaker = title == "PRECISION RESTORED" ? "ROBOT" : title;
         dialogue.message = EndDialogueMessage;
-        dialogue.fullDialogueSprite = LoadSprite(EndDialogueArtworkPath) ?? existingDialogueSprite;
-        dialogue.panelSize = new Vector2(980f, 300f);
+        dialogue.fullDialogueSprite = LoadSprite(PrecisionRestoredArtworkPath) ?? LoadSprite(EndDialogueArtworkPath) ?? existingDialogueSprite;
+        dialogue.panelSize = new Vector2(860f, 575f);
         dialogue.panelOffset = new Vector2(0f, 8f);
         EditorUtility.SetDirty(dialogue);
 
