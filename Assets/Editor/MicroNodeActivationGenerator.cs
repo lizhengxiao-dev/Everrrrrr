@@ -306,15 +306,13 @@ public static class MicroNodeActivationGenerator
         if (spriteRenderer != null && usesGestureSprites)
         {
             spriteRenderer.sprite = gestureSprites[0];
+            spriteRenderer.enabled = false;
             EditorUtility.SetDirty(spriteRenderer);
         }
 
-        if (usesGestureSprites && idleState.StartsWith("Male", StringComparison.OrdinalIgnoreCase))
+        if (usesGestureSprites)
         {
-            Vector3 scale = robot.transform.localScale;
-            robot.transform.localScale = new Vector3(scale.x * 1.05f, scale.y * 1.426f, scale.z);
-            robot.transform.position += new Vector3(-0.12f, -0.37f, 0f);
-            EditorUtility.SetDirty(robot.transform);
+            EnsureGestureSpriteChild(robot, spriteRenderer, gestureSprites[0]);
         }
 
         DestroyComponent<RobotAnimationController>(robot);
@@ -338,9 +336,39 @@ public static class MicroNodeActivationGenerator
         feedback.useGestureSynchronizedSprites = usesGestureSprites;
         feedback.gestureSprites = gestureSprites != null ? gestureSprites.ToArray() : Array.Empty<Sprite>();
         feedback.poweredUpSprites = poweredUpSprites != null ? poweredUpSprites.ToArray() : Array.Empty<Sprite>();
+        feedback.gestureSpriteLocalPosition = new Vector3(-0.17f, -0.85f, 0f);
+        feedback.gestureSpriteLocalScale = new Vector3(1.05f, 1.426f, 1f);
         feedback.fingertipGlowLocalPosition = fingertipPosition;
         feedback.sortingOrder = 165;
         EditorUtility.SetDirty(robot);
+    }
+
+    private static void EnsureGestureSpriteChild(GameObject robot, SpriteRenderer rootRenderer, Sprite firstSprite)
+    {
+        Transform existing = robot.transform.Find("MicroNode_GestureSprite");
+        GameObject spriteObject = existing != null ? existing.gameObject : new GameObject("MicroNode_GestureSprite");
+        spriteObject.transform.SetParent(robot.transform, false);
+        spriteObject.transform.localPosition = new Vector3(-0.17f, -0.85f, 0f);
+        spriteObject.transform.localRotation = Quaternion.identity;
+        spriteObject.transform.localScale = new Vector3(1.05f, 1.426f, 1f);
+
+        SpriteRenderer renderer = spriteObject.GetComponent<SpriteRenderer>();
+        if (renderer == null)
+        {
+            renderer = spriteObject.AddComponent<SpriteRenderer>();
+        }
+
+        renderer.sprite = firstSprite;
+        renderer.enabled = true;
+        if (rootRenderer != null)
+        {
+            renderer.sortingLayerID = rootRenderer.sortingLayerID;
+            renderer.sortingOrder = rootRenderer.sortingOrder;
+            renderer.sharedMaterial = rootRenderer.sharedMaterial;
+        }
+
+        EditorUtility.SetDirty(spriteObject);
+        EditorUtility.SetDirty(renderer);
     }
 
     private static void ConfigureHandInput()

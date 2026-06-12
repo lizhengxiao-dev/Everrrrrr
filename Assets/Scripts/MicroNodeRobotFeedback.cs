@@ -13,10 +13,13 @@ public class MicroNodeRobotFeedback : MonoBehaviour
     public float pinchAdvanceSpeed = 28f;
     public float releaseAdvanceSpeed = 24f;
     public float poweredUpFrameRate = 30f;
+    public Vector3 gestureSpriteLocalPosition = new Vector3(-0.17f, -0.85f, 0f);
+    public Vector3 gestureSpriteLocalScale = new Vector3(1.05f, 1.426f, 1f);
     public Vector3 fingertipGlowLocalPosition = new Vector3(1.55f, 0.7f, -0.08f);
     public int sortingOrder = 165;
 
     private Animator animator;
+    private SpriteRenderer rootSpriteRenderer;
     private SpriteRenderer spriteRenderer;
     private Transform glowRoot;
     private SpriteRenderer glowRenderer;
@@ -30,17 +33,23 @@ public class MicroNodeRobotFeedback : MonoBehaviour
     private void Awake()
     {
         animator = GetComponent<Animator>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        rootSpriteRenderer = GetComponent<SpriteRenderer>();
+        spriteRenderer = rootSpriteRenderer;
         if (handTracker == null)
         {
             handTracker = Object.FindFirstObjectByType<HandTracker>();
         }
-        if (UseGestureSprites())
+        if (useGestureSynchronizedSprites && gestureSprites != null && gestureSprites.Length > 0)
         {
+            EnsureGestureSpriteRenderer();
             gesture01 = 0f;
             if (animator != null)
             {
                 animator.enabled = false;
+            }
+            if (rootSpriteRenderer != null)
+            {
+                rootSpriteRenderer.enabled = false;
             }
             ApplyGestureFrame();
         }
@@ -235,6 +244,32 @@ public class MicroNodeRobotFeedback : MonoBehaviour
             && spriteRenderer != null
             && gestureSprites != null
             && gestureSprites.Length > 0;
+    }
+
+    private void EnsureGestureSpriteRenderer()
+    {
+        Transform existing = transform.Find("MicroNode_GestureSprite");
+        GameObject spriteObject = existing != null ? existing.gameObject : new GameObject("MicroNode_GestureSprite");
+        spriteObject.transform.SetParent(transform, false);
+        spriteObject.transform.localPosition = gestureSpriteLocalPosition;
+        spriteObject.transform.localRotation = Quaternion.identity;
+        spriteObject.transform.localScale = gestureSpriteLocalScale;
+
+        SpriteRenderer renderer = spriteObject.GetComponent<SpriteRenderer>();
+        if (renderer == null)
+        {
+            renderer = spriteObject.AddComponent<SpriteRenderer>();
+        }
+
+        if (rootSpriteRenderer != null)
+        {
+            renderer.sortingLayerID = rootSpriteRenderer.sortingLayerID;
+            renderer.sortingOrder = rootSpriteRenderer.sortingOrder;
+            renderer.sharedMaterial = rootSpriteRenderer.sharedMaterial;
+        }
+
+        renderer.enabled = true;
+        spriteRenderer = renderer;
     }
 
     private void ApplyGestureFrame()
