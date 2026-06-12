@@ -18,6 +18,7 @@ public static class MicroNodeActivationGenerator
     private const string PinchSpritesFolder = GeneratedFolder + "/PinchSprites";
     private const string BackgroundPath = "Assets/MedicalRoom_Background.png";
     private const string EndDialogueArtworkPath = GeneratedFolder + "/EndDialogueFull.png";
+    private const string IntroDialogueArtworkPath = GeneratedFolder + "/IntroDialogueFull.png";
     private const string PrecisionHeaderArtworkPath = GeneratedFolder + "/PrecisionHeaderFull.png";
     private const string PrecisionRestoredArtworkPath = GeneratedFolder + "/PrecisionRestoredPanel.png";
     private const string BottomHudArtworkPath = GeneratedFolder + "/BottomHudFull.png";
@@ -729,11 +730,11 @@ public static class MicroNodeActivationGenerator
         panelRect.anchorMax = new Vector2(0.5f, 0.5f);
         panelRect.pivot = new Vector2(0.5f, 0.5f);
         panelRect.anchoredPosition = new Vector2(0f, 100f);
-        panelRect.sizeDelta = new Vector2(960f, 210f);
+        panelRect.sizeDelta = new Vector2(960f, 288f);
 
         Image image = panel.GetComponent<Image>();
-        image.sprite = LoadSprite(PrecisionRestoredArtworkPath);
-        image.preserveAspect = false;
+        image.sprite = LoadSprite(IntroDialogueArtworkPath);
+        image.preserveAspect = true;
         image.color = Color.white;
         image.raycastTarget = false;
 
@@ -899,8 +900,8 @@ public static class MicroNodeActivationGenerator
 
         dialogue.speaker = title == "PRECISION RESTORED" ? "ROBOT" : title;
         dialogue.message = EndDialogueMessage;
-        dialogue.fullDialogueSprite = LoadSprite(PrecisionRestoredArtworkPath) ?? LoadSprite(EndDialogueArtworkPath) ?? existingDialogueSprite;
-        dialogue.panelSize = new Vector2(860f, 575f);
+        dialogue.fullDialogueSprite = LoadSprite(EndDialogueArtworkPath) ?? existingDialogueSprite;
+        dialogue.panelSize = new Vector2(980f, 300f);
         dialogue.panelOffset = new Vector2(0f, 8f);
         EditorUtility.SetDirty(dialogue);
 
