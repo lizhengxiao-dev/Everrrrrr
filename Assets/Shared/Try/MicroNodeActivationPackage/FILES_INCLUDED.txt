@@ -1,0 +1,20 @@
+Scene:
+- Assets/Shared/Try/MicroNodeActivation.unity
+
+Core assets:
+- Assets/MicroNodeActivation/
+- Assets/MedicalRoom_Background.png
+- Assets/NewRobotGame/Male/PoweredUp/
+- Assets/NewRobotGame/Female/PoweredUp/
+
+Runtime scripts:
+- Assets/HandTracker.cs
+- Assets/Scripts/MicroNode*.cs
+- Assets/Scripts/EverMotionCountdownOverlay.cs
+- Assets/Scripts/EverMotionFeedbackToast.cs
+- Assets/Scripts/EverMotionUIPolisher.cs
+
+MediaPipe bridge:
+- Tools/MediaPipe/run_micro_node_tracker.command
+- Tools/MediaPipe/micro_node_tracker.py
+- Tools/MediaPipe/requirements.txt

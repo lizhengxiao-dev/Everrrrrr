@@ -8,7 +8,8 @@ using UnityEngine;
 
 /// <summary>
 /// Receives EverMotion UDP control messages and moves RehabTarget.
-/// Preferred format: "LEFT,x,y", "RIGHT,x,y", "UP,x,y", or "IDLE,x,y".
+/// Preferred action format: "LEFT,x,y", "RIGHT,x,y", "UP,x,y", or "IDLE,x,y".
+/// Precision format: "PINCH,x,y", "OPEN,x,y", or "MOVE,x,y".
 /// Fallback format: "x,y" normalized coordinates in the range 0..1.
 /// </summary>
 public class HandTracker : MonoBehaviour
@@ -51,6 +52,7 @@ public class HandTracker : MonoBehaviour
     private string latestRawMessage = "";
     private string latestRemoteEndpoint = "";
     private string latestParseWarning = "";
+    private long latestReceivedUtcTicks;
     private float nextDebugLogTime;
 
     private void Awake()
@@ -148,6 +150,7 @@ public class HandTracker : MonoBehaviour
                         latestRawMessage = trimmedMessage;
                         latestRemoteEndpoint = remoteEndPoint.Address + ":" + remoteEndPoint.Port;
                         latestParseWarning = "";
+                        latestReceivedUtcTicks = DateTime.UtcNow.Ticks;
                         currentActionDebug = parsedAction;
                         currentWorldTargetDebug = worldTarget;
                         currentRawMessageDebug = trimmedMessage;
@@ -162,7 +165,7 @@ public class HandTracker : MonoBehaviour
                         latestParseWarning =
                         "[UDP RECEIVE - PARSE FAILED] " + latestRemoteEndpoint
                         + " | raw: " + trimmedMessage
-                        + " | expected: LEFT,x,y / RIGHT,x,y / UP,x,y / IDLE,x,y";
+                        + " | expected: PINCH,x,y / OPEN,x,y / LEFT,x,y / RIGHT,x,y / UP,x,y / IDLE,x,y";
                         currentRawMessageDebug = trimmedMessage;
                     }
                 }
@@ -196,6 +199,32 @@ public class HandTracker : MonoBehaviour
         }
     }
 
+    public bool IsPinching()
+    {
+        lock (latestLock)
+        {
+            return latestAction == "PINCH";
+        }
+    }
+
+    public bool HasRecentMessage(float maxAgeSeconds = 1f)
+    {
+        long receivedTicks;
+
+        lock (latestLock)
+        {
+            receivedTicks = latestReceivedUtcTicks;
+        }
+
+        if (receivedTicks <= 0)
+        {
+            return false;
+        }
+
+        double ageSeconds = (DateTime.UtcNow.Ticks - receivedTicks) / (double)TimeSpan.TicksPerSecond;
+        return ageSeconds <= Mathf.Max(0.05f, maxAgeSeconds);
+    }
+
     private bool TryParseMessage(string message, out Vector2 worldTarget, out string parsedAction)
     {
         worldTarget = idleWorldPosition;
@@ -213,6 +242,22 @@ public class HandTracker : MonoBehaviour
         }
 
         string action = parts[0].ToUpperInvariant();
+
+        if (IsPrecisionAction(action) && parts.Length >= 3)
+        {
+            bool parsedPrecisionX = float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float precisionX);
+            bool parsedPrecisionY = float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float precisionY);
+
+            if (!parsedPrecisionX || !parsedPrecisionY)
+            {
+                return false;
+            }
+
+            worldTarget = MapNormalizedToWorld(Clamp01(precisionX), Clamp01(precisionY));
+            parsedAction = action;
+            return true;
+        }
+
         if (TryGetActionTarget(action, out worldTarget))
         {
             parsedAction = action;
@@ -235,6 +280,11 @@ public class HandTracker : MonoBehaviour
         worldTarget = MapNormalizedToWorld(Clamp01(normalizedX), Clamp01(normalizedY));
         parsedAction = "COORDINATE";
         return true;
+    }
+
+    private static bool IsPrecisionAction(string action)
+    {
+        return action == "PINCH" || action == "OPEN" || action == "MOVE";
     }
 
     private bool TryGetActionTarget(string action, out Vector2 worldTarget)

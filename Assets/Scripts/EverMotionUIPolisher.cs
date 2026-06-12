@@ -29,7 +29,20 @@ public static class EverMotionUIPolisher
         if (camera != null)
         {
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = HexColor(0x0B, 0x0F, 0x19, 0xFF);
+            camera.backgroundColor = HasWorldBackgroundSprite()
+                ? HexColor(0xE8, 0xF4, 0xFF, 0xFF)
+                : HexColor(0x0B, 0x0F, 0x19, 0xFF);
+        }
+
+        if (HasWorldBackgroundSprite())
+        {
+            GameObject existingGrid = FindSceneObject("DeepSciFi_Background_Grid");
+            if (existingGrid != null)
+            {
+                existingGrid.SetActive(false);
+            }
+
+            return;
         }
 
         GameObject background = FindSceneObject("DeepSciFi_Background_Grid");
@@ -81,7 +94,7 @@ public static class EverMotionUIPolisher
 
         SpriteRenderer renderer = worldBackground.GetComponent<SpriteRenderer>();
         renderer.sprite = importedBackgroundSprite;
-        renderer.color = new Color32(255, 255, 255, 220);
+        renderer.color = Color.white;
         renderer.sortingOrder = -500;
 
         Camera camera = Camera.main;
@@ -100,6 +113,18 @@ public static class EverMotionUIPolisher
             worldBackground.transform.position = new Vector3(0f, 0f, 9f);
             worldBackground.transform.localScale = Vector3.one;
         }
+    }
+
+    private static bool HasWorldBackgroundSprite()
+    {
+        GameObject worldBackground = FindSceneObject("CyberBackground_WORLD");
+        if (worldBackground == null || !worldBackground.activeInHierarchy)
+        {
+            return false;
+        }
+
+        SpriteRenderer renderer = worldBackground.GetComponent<SpriteRenderer>();
+        return renderer != null && renderer.sprite != null;
     }
 
     private static void PolishHudPanels()

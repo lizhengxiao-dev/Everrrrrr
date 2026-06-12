@@ -444,6 +444,16 @@ public static class MicroNodeActivationGenerator
             manager = managerObject.AddComponent<MicroNodeActivationManager>();
         }
 
+        MicroNodeMediaPipeLauncher mediaPipeLauncher = managerObject.GetComponent<MicroNodeMediaPipeLauncher>();
+        if (mediaPipeLauncher == null)
+        {
+            mediaPipeLauncher = managerObject.AddComponent<MicroNodeMediaPipeLauncher>();
+        }
+        mediaPipeLauncher.launchOnStart = true;
+        mediaPipeLauncher.stopTrackerOnQuit = true;
+        mediaPipeLauncher.openTerminalOnMac = true;
+        mediaPipeLauncher.scriptRelativePath = "Tools/MediaPipe/run_micro_node_tracker.command";
+
         manager.roundCount = 3;
         manager.roundDuration = 60f;
         manager.requiredCaptures = 20;
@@ -497,6 +507,7 @@ public static class MicroNodeActivationGenerator
         }
 
         EditorUtility.SetDirty(manager);
+        EditorUtility.SetDirty(mediaPipeLauncher);
     }
 
     private static void RemoveLegacyHudObjects()
