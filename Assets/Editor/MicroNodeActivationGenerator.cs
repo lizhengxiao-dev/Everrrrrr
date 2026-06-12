@@ -784,9 +784,17 @@ public static class MicroNodeActivationGenerator
         {
             dialogue = panel.AddComponent<MicroNodeEndDialogueAnimator>();
         }
+        Sprite existingDialogueSprite = dialogue.fullDialogueSprite;
+        if (existingDialogueSprite == null)
+        {
+            Transform existingArtwork = panel.transform.Find("DialogueFullArtwork");
+            Image existingArtworkImage = existingArtwork != null ? existingArtwork.GetComponent<Image>() : null;
+            existingDialogueSprite = existingArtworkImage != null ? existingArtworkImage.sprite : null;
+        }
+
         dialogue.speaker = title == "PRECISION RESTORED" ? "ROBOT" : title;
         dialogue.message = EndDialogueMessage;
-        dialogue.fullDialogueSprite = LoadSprite(EndDialogueArtworkPath);
+        dialogue.fullDialogueSprite = LoadSprite(EndDialogueArtworkPath) ?? existingDialogueSprite;
         dialogue.panelSize = new Vector2(980f, 300f);
         dialogue.panelOffset = new Vector2(0f, 8f);
         EditorUtility.SetDirty(dialogue);
