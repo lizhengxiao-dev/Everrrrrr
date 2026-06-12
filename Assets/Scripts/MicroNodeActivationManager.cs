@@ -78,6 +78,7 @@ public class MicroNodeActivationManager : MonoBehaviour
     private int missedCount;
     private bool previousPinch;
     private bool sessionEnded;
+    private bool restartPending;
     private bool sessionStarted;
     private bool sessionStarting;
     private bool roundTransitionActive;
@@ -159,9 +160,9 @@ public class MicroNodeActivationManager : MonoBehaviour
 
         if (sessionEnded)
         {
-            if (WasRestartPressed())
+            if (!restartPending && WasRestartPressed())
             {
-                SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+                StartCoroutine(RestartAfterEndPanelOut());
             }
 
             previousPinch = isPinching;
@@ -379,16 +380,33 @@ public class MicroNodeActivationManager : MonoBehaviour
         sessionEnded = true;
         ClearActiveNodes();
 
-        SetPanelVisible(gameClearPanel, true);
         SetPanelVisible(gameOverPanel, false);
+        MicroNodeRobotFeedback activeFeedback = GetActiveRobotFeedback();
+        Sprite portraitSprite = activeFeedback != null ? activeFeedback.GetRestingSprite() : null;
         SetEndPanelText(
             gameClearPanel,
-            "PRECISION RESTORED",
-            "Thank you... the fingertip circuits are lighting up again. I can feel each small movement returning.\n"
-                + "Energy nodes restored: " + capturedCount
+            "ROBOT",
+            "\"Thank you... I can feel my fingers responding again. Keep going - we're making progress!\"",
+            portraitSprite
         );
+        SetPanelVisible(gameClearPanel, true);
 
         UpdateHud();
+    }
+
+    private IEnumerator RestartAfterEndPanelOut()
+    {
+        restartPending = true;
+        MicroNodeEndDialogueAnimator dialogue = gameClearPanel != null
+            ? gameClearPanel.GetComponent<MicroNodeEndDialogueAnimator>()
+            : null;
+
+        if (dialogue != null)
+        {
+            yield return dialogue.PlayHideOutRoutine();
+        }
+
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     private IEnumerator BeginSessionRoutine()
@@ -1309,10 +1327,17 @@ public class MicroNodeActivationManager : MonoBehaviour
         group.gameObject.SetActive(visible);
     }
 
-    private static void SetEndPanelText(GameObject panel, string title, string subtitle)
+    private static void SetEndPanelText(GameObject panel, string title, string subtitle, Sprite portraitSprite = null)
     {
         if (panel == null)
         {
+            return;
+        }
+
+        MicroNodeEndDialogueAnimator dialogue = panel.GetComponent<MicroNodeEndDialogueAnimator>();
+        if (dialogue != null)
+        {
+            dialogue.SetDialogue(title, subtitle, portraitSprite);
             return;
         }
 

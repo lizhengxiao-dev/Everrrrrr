@@ -17,6 +17,7 @@ public static class MicroNodeActivationGenerator
     private const string GeneratedFolder = "Assets/MicroNodeActivation";
     private const string PinchSpritesFolder = GeneratedFolder + "/PinchSprites";
     private const string BackgroundPath = "Assets/MedicalRoom_Background.png";
+    private const string EndDialogueMessage = "\"Thank you... I can feel my fingers responding again. Keep going - we're making progress!\"";
 
     [MenuItem("EverMotion/Micro Node Activation - Build Scene")]
     public static void BuildScene()
@@ -730,27 +731,69 @@ public static class MicroNodeActivationGenerator
         GameObject panel = FindSceneObject(name);
         if (panel == null)
         {
-            panel = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Outline));
+            panel = new GameObject(
+                name,
+                typeof(RectTransform),
+                typeof(Image),
+                typeof(Outline),
+                typeof(CanvasGroup),
+                typeof(MicroNodeEndDialogueAnimator)
+            );
             panel.transform.SetParent(canvas, false);
+        }
+        if (panel.GetComponent<Image>() == null)
+        {
+            panel.AddComponent<Image>();
+        }
+        if (panel.GetComponent<Outline>() == null)
+        {
+            panel.AddComponent<Outline>();
+        }
+        if (panel.GetComponent<CanvasGroup>() == null)
+        {
+            panel.AddComponent<CanvasGroup>();
         }
 
         RectTransform panelRect = panel.GetComponent<RectTransform>();
         panelRect.anchorMin = new Vector2(0.5f, 0.5f);
         panelRect.anchorMax = new Vector2(0.5f, 0.5f);
         panelRect.pivot = new Vector2(0.5f, 0.5f);
-        panelRect.anchoredPosition = new Vector2(0f, 70f);
-        panelRect.sizeDelta = new Vector2(920f, 280f);
+        panelRect.anchoredPosition = new Vector2(0f, -58f);
+        panelRect.sizeDelta = new Vector2(1040f, 390f);
 
         Image image = panel.GetComponent<Image>();
         image.color = new Color32(5, 18, 30, 225);
+        image.enabled = false;
 
         Outline outline = panel.GetComponent<Outline>();
         outline.effectColor = outlineColor;
         outline.effectDistance = new Vector2(3f, -3f);
+        outline.enabled = false;
 
-        EnsurePanelText(panel.transform, name + "_Title", title, new Vector2(0f, 55f), 44);
-        EnsurePanelText(panel.transform, name + "_Subtitle", "Press R to restart", new Vector2(0f, -48f), 22);
+        MicroNodeEndDialogueAnimator dialogue = panel.GetComponent<MicroNodeEndDialogueAnimator>();
+        if (dialogue == null)
+        {
+            dialogue = panel.AddComponent<MicroNodeEndDialogueAnimator>();
+        }
+        dialogue.speaker = title == "PRECISION RESTORED" ? "ROBOT" : title;
+        dialogue.message = EndDialogueMessage;
+        dialogue.robotPortraitSprite = LoadDefaultDialoguePortrait();
+        EditorUtility.SetDirty(dialogue);
+
+        DestroyChild(panel.transform, name + "_Title");
+        DestroyChild(panel.transform, name + "_Subtitle");
         return panel;
+    }
+
+    private static Sprite LoadDefaultDialoguePortrait()
+    {
+        Sprite portrait = GetSprites(PinchSpritesFolder + "/Male").FirstOrDefault();
+        if (portrait != null)
+        {
+            return portrait;
+        }
+
+        return LoadSprite("Assets/NewRobotGame/Male/Idle/Male0001.png");
     }
 
     private static void EnsurePanelText(Transform panel, string name, string value, Vector2 position, int fontSize)

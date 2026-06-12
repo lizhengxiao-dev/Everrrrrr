@@ -107,6 +107,16 @@ public class MicroNodeRobotFeedback : MonoBehaviour
         return spriteRenderer != null && poweredUpSprites != null && poweredUpSprites.Length > 0;
     }
 
+    public Sprite GetRestingSprite()
+    {
+        if (gestureSprites != null && gestureSprites.Length > 0)
+        {
+            return gestureSprites[0];
+        }
+
+        return spriteRenderer != null ? spriteRenderer.sprite : null;
+    }
+
     public IEnumerator PlayPoweredUpCelebration()
     {
         if (!HasPoweredUpCelebration())
