@@ -13,7 +13,7 @@ public class MicroNodeActivationManager : MonoBehaviour
     [Header("Session")]
     public int roundCount = 3;
     public float roundDuration = 60f;
-    public int requiredCaptures = 18;
+    public int requiredCaptures = 20;
     public float baseNodeLifetime = 18f;
     public float disappearSpeedMultiplier = 1.5f;
     public int activeNodeCount = 3;
@@ -69,10 +69,14 @@ public class MicroNodeActivationManager : MonoBehaviour
     private bool sessionStarted;
     private bool sessionStarting;
     private bool roundTransitionActive;
+    private bool finalizingSession;
     private static Material circuitLineMaterial;
     private static Sprite titleFrameSprite;
     private TextMesh titleFrameTimerText;
     private TextMesh titleFrameRoundText;
+    private TextMesh nodeStatusCounterText;
+    private Transform nodeStatusFillTransform;
+    private SpriteRenderer[] systemPowerBars;
 
     public int CurrentRound => currentRound;
     public int CapturedCount => capturedCount;
@@ -92,6 +96,9 @@ public class MicroNodeActivationManager : MonoBehaviour
     private void Start()
     {
         elapsedSessionTime = 0f;
+        roundCount = 3;
+        roundDuration = 60f;
+        requiredCaptures = 20;
         currentRound = 1;
         capturedCount = 0;
         missedCount = 0;
@@ -99,6 +106,7 @@ public class MicroNodeActivationManager : MonoBehaviour
         sessionStarted = !waitForMediaPipeBeforeStarting;
         sessionStarting = false;
         roundTransitionActive = false;
+        finalizingSession = false;
 
         EverMotionUIPolisher.ApplyPolish();
         EverMotionCountdownOverlay.PolishStoryPanel(
@@ -168,7 +176,10 @@ public class MicroNodeActivationManager : MonoBehaviour
 
         if (elapsedSessionTime >= roundCount * roundDuration)
         {
-            EndSession();
+            if (!finalizingSession)
+            {
+                StartCoroutine(EndSessionRoutine());
+            }
             previousPinch = isPinching;
             return;
         }
@@ -185,7 +196,7 @@ public class MicroNodeActivationManager : MonoBehaviour
     public void NotifyNodeCaptured(MicroNodeTarget node)
     {
         activeNodes.Remove(node);
-        capturedCount++;
+        capturedCount = Mathf.Min(capturedCount + 1, requiredCaptures);
         EverMotionFeedbackToast.Show(this, "NODE RESTORED  +" + capturedCount.ToString("00"), GetRoundColor(currentRound));
 
         MicroNodeRobotFeedback feedback = GetActiveRobotFeedback();
@@ -380,10 +391,34 @@ public class MicroNodeActivationManager : MonoBehaviour
         UpdateHud();
     }
 
+    private IEnumerator EndSessionRoutine()
+    {
+        finalizingSession = true;
+        roundTransitionActive = true;
+        ClearActiveNodes();
+
+        if (capturedCount >= requiredCaptures)
+        {
+            yield return PlayRoundPowerUpRoutine();
+        }
+
+        EndSession();
+        roundTransitionActive = false;
+        finalizingSession = false;
+    }
+
     private IEnumerator RoundTransitionRoutine(int nextRound)
     {
         roundTransitionActive = true;
         ClearActiveNodes();
+
+        if (capturedCount >= requiredCaptures)
+        {
+            yield return PlayRoundPowerUpRoutine();
+        }
+
+        capturedCount = 0;
+        missedCount = 0;
         currentRound = nextRound;
         UpdateHud();
 
@@ -449,7 +484,7 @@ public class MicroNodeActivationManager : MonoBehaviour
 
         if (counterText != null)
         {
-            counterText.text = "NODES  " + capturedCount.ToString("00") + " / " + requiredCaptures.ToString("00");
+            counterText.text = "NODES  " + Mathf.Min(capturedCount, requiredCaptures).ToString("00") + " / " + requiredCaptures.ToString("00");
         }
 
         if (energyBar != null)
@@ -462,6 +497,7 @@ public class MicroNodeActivationManager : MonoBehaviour
         float charge01 = requiredCaptures <= 0
             ? 0f
             : Mathf.Clamp01(capturedCount / (float)requiredCaptures);
+        UpdateNodeStatusPanel(charge01);
         Color chargeColor = GetChargeColor(charge01);
         if (energyBarFill != null)
         {
@@ -612,6 +648,7 @@ public class MicroNodeActivationManager : MonoBehaviour
         nodeRoot = rootObject.transform;
         EnsureCircuitField();
         EnsureTopTitleFrame();
+        EnsureNodeStatusPanel();
 
         if (chargingStation == null)
         {
@@ -665,14 +702,11 @@ public class MicroNodeActivationManager : MonoBehaviour
         frame.transform.localScale = Vector3.one;
 
         SpriteRenderer frameRenderer = frame.GetComponent<SpriteRenderer>();
-        if (frameRenderer == null)
+        if (frameRenderer != null)
         {
-            frameRenderer = frame.AddComponent<SpriteRenderer>();
+            frameRenderer.enabled = false;
         }
-        frameRenderer.sprite = GetTitleFrameSprite();
-        frameRenderer.color = new Color32(8, 9, 14, 215);
-        frameRenderer.sortingOrder = 220;
-        frame.transform.localScale = new Vector3(5.2f, 1.24f, 1f);
+        EnsureWorldBlock(frame.transform, "TitleFrame_Backplate", Vector3.zero, new Vector3(5.2f, 1.24f, 1f), new Color32(8, 9, 14, 215), 220);
 
         EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameTitle", "MICRO NODE ACTIVATION", new Vector3(0f, 0.36f, -0.02f), 0.038f, TextAnchor.MiddleCenter, new Color32(230, 232, 240, 255), 230);
         EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameSubtitle", "Precision System (Fingers)", new Vector3(0f, 0.12f, -0.02f), 0.021f, TextAnchor.MiddleCenter, new Color32(185, 190, 206, 255), 230);
@@ -681,6 +715,88 @@ public class MicroNodeActivationManager : MonoBehaviour
 
         titleFrameTimerText = EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameTimer", "00:00", new Vector3(-1.7f, -0.46f, -0.02f), 0.036f, TextAnchor.MiddleLeft, new Color32(238, 239, 246, 255), 231);
         titleFrameRoundText = EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameRound", "1/3", new Vector3(1.74f, -0.46f, -0.02f), 0.036f, TextAnchor.MiddleLeft, new Color32(238, 239, 246, 255), 231);
+    }
+
+    private void EnsureNodeStatusPanel()
+    {
+        GameObject panel = FindSceneObject("MicroNode_NodeStatusPanel_World");
+        if (panel == null)
+        {
+            panel = new GameObject("MicroNode_NodeStatusPanel_World");
+        }
+
+        panel.transform.position = GetNodeStatusPanelWorldPosition();
+        panel.transform.rotation = Quaternion.identity;
+        panel.transform.localScale = Vector3.one;
+
+        SpriteRenderer rootRenderer = panel.GetComponent<SpriteRenderer>();
+        if (rootRenderer != null)
+        {
+            rootRenderer.enabled = false;
+        }
+
+        EnsureWorldBlock(panel.transform, "NodeStatus_Backplate", Vector3.zero, new Vector3(1.76f, 1.42f, 1f), new Color32(8, 9, 14, 218), 220);
+        EnsureWorldFrameText(panel.transform, "Text_NodeStatusLabel", "NODES COLLECTED", new Vector3(0f, 0.49f, -0.03f), 0.016f, TextAnchor.MiddleCenter, new Color32(137, 168, 192, 255), 231);
+        nodeStatusCounterText = EnsureWorldFrameText(panel.transform, "Text_NodeStatusCounter", "0 / 20", new Vector3(0f, 0.27f, -0.03f), 0.036f, TextAnchor.MiddleCenter, new Color32(235, 237, 244, 255), 232);
+
+        EnsureWorldBlock(panel.transform, "NodeStatus_ProgressTrack", new Vector3(0f, 0.06f, -0.03f), new Vector3(1.2f, 0.12f, 1f), new Color32(17, 28, 42, 235), 231);
+        nodeStatusFillTransform = EnsureWorldBlock(panel.transform, "NodeStatus_ProgressFill", new Vector3(-0.57f, 0.06f, -0.04f), new Vector3(0.02f, 0.12f, 1f), new Color32(116, 228, 76, 255), 232).transform;
+
+        EnsureWorldFrameText(panel.transform, "Text_SystemPowerLabel", "SYSTEM POWER", new Vector3(0f, -0.26f, -0.03f), 0.016f, TextAnchor.MiddleCenter, new Color32(137, 168, 192, 255), 231);
+
+        const int barCount = 13;
+        if (systemPowerBars == null || systemPowerBars.Length != barCount)
+        {
+            systemPowerBars = new SpriteRenderer[barCount];
+        }
+
+        float startX = -0.49f;
+        for (int i = 0; i < barCount; i++)
+        {
+            SpriteRenderer bar = EnsureWorldBlock(
+                panel.transform,
+                "SystemPower_Bar_" + i.ToString("00"),
+                new Vector3(startX + i * 0.082f, -0.49f, -0.04f),
+                new Vector3(0.045f, 0.22f, 1f),
+                new Color32(102, 186, 255, 255),
+                232
+            );
+            systemPowerBars[i] = bar;
+        }
+    }
+
+    private void UpdateNodeStatusPanel(float charge01)
+    {
+        int displayCount = Mathf.Min(capturedCount, requiredCaptures);
+        if (nodeStatusCounterText != null)
+        {
+            nodeStatusCounterText.text = displayCount + " / " + requiredCaptures;
+        }
+
+        if (nodeStatusFillTransform != null)
+        {
+            float width = Mathf.Lerp(0.02f, 1.2f, charge01);
+            nodeStatusFillTransform.localScale = new Vector3(width, 0.12f, 1f);
+            nodeStatusFillTransform.localPosition = new Vector3(-0.6f + width * 0.5f, 0.06f, -0.04f);
+        }
+
+        if (systemPowerBars == null)
+        {
+            return;
+        }
+
+        int activeBars = Mathf.CeilToInt(charge01 * systemPowerBars.Length);
+        for (int i = 0; i < systemPowerBars.Length; i++)
+        {
+            if (systemPowerBars[i] == null)
+            {
+                continue;
+            }
+
+            systemPowerBars[i].color = i < activeBars
+                ? new Color32(108, 190, 255, 255)
+                : new Color32(32, 65, 92, 180);
+        }
     }
 
     private static Vector3 GetTitleFrameWorldPosition()
@@ -697,6 +813,48 @@ public class MicroNodeActivationManager : MonoBehaviour
             ? camera.transform.position.y + camera.orthographicSize
             : 4.5f;
         return new Vector3(0f, top - 0.6f, -0.2f);
+    }
+
+    private static Vector3 GetNodeStatusPanelWorldPosition()
+    {
+        SpriteRenderer background = FindSceneComponent<SpriteRenderer>("CyberBackground_WORLD");
+        if (background != null)
+        {
+            Bounds bounds = background.bounds;
+            return new Vector3(bounds.max.x - 1.08f, bounds.max.y - 1.55f, -0.2f);
+        }
+
+        Camera camera = Camera.main;
+        if (camera != null && camera.orthographic)
+        {
+            float right = camera.transform.position.x + camera.orthographicSize * camera.aspect;
+            float top = camera.transform.position.y + camera.orthographicSize;
+            return new Vector3(right - 1.15f, top - 1.65f, -0.2f);
+        }
+
+        return new Vector3(6.1f, 3f, -0.2f);
+    }
+
+    private static SpriteRenderer EnsureWorldBlock(Transform parent, string name, Vector3 localPosition, Vector3 localScale, Color color, int sortingOrder)
+    {
+        Transform existing = parent.Find(name);
+        GameObject blockObject = existing != null ? existing.gameObject : new GameObject(name);
+        blockObject.transform.SetParent(parent, false);
+        blockObject.transform.localPosition = localPosition;
+        blockObject.transform.localRotation = Quaternion.identity;
+        blockObject.transform.localScale = localScale;
+
+        SpriteRenderer renderer = blockObject.GetComponent<SpriteRenderer>();
+        if (renderer == null)
+        {
+            renderer = blockObject.AddComponent<SpriteRenderer>();
+        }
+
+        renderer.enabled = true;
+        renderer.sprite = GetTitleFrameSprite();
+        renderer.color = color;
+        renderer.sortingOrder = sortingOrder;
+        return renderer;
     }
 
     private static TextMesh EnsureWorldFrameText(Transform parent, string name, string value, Vector3 localPosition, float characterSize, TextAnchor alignment, Color color, int sortingOrder)
@@ -849,6 +1007,90 @@ public class MicroNodeActivationManager : MonoBehaviour
         {
             controller.enabled = false;
         }
+    }
+
+    private IEnumerator PlayRoundPowerUpRoutine()
+    {
+        Transform robotTransform = GetActiveRobotTransform();
+        GameObject robot = robotTransform != null ? robotTransform.gameObject : null;
+        Animator animator = robot != null ? robot.GetComponent<Animator>() : null;
+        if (robot == null || animator == null)
+        {
+            yield break;
+        }
+
+        bool isFemale = robot == femaleRobot;
+        string powerState = FindFirstAnimatorState(animator, isFemale
+            ? new[] { "Female_PoweredUp", "f_PoweredUp", "Female_PoweredUp_Anim" }
+            : new[] { "Male_PoweredUp", "m_PoweredUp", "Male_PoweredUp_Anim" });
+
+        if (string.IsNullOrEmpty(powerState))
+        {
+            Debug.LogWarning("MicroNodeActivationManager: active robot controller has no PoweredUp state.");
+            yield break;
+        }
+
+        string idleState = FindFirstAnimatorState(animator, isFemale
+            ? new[] { "Female_Idle", "Female_Idle_Anim", "F_idle" }
+            : new[] { "Male_Idle", "Male_Idle_Anim", "M_idle" });
+
+        Vector3 originalScale = robot.transform.localScale;
+        animator.speed = 1f;
+        animator.CrossFade(powerState, 0.06f, 0, 0f);
+
+        float duration = Mathf.Max(2.35f, GetAnimationClipLength(animator, powerState) + 0.08f);
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float pulse = Mathf.Sin(Mathf.Clamp01(elapsed / duration) * Mathf.PI);
+            robot.transform.localScale = originalScale * (1f + pulse * 0.055f);
+            yield return null;
+        }
+
+        robot.transform.localScale = originalScale;
+        if (!string.IsNullOrEmpty(idleState))
+        {
+            animator.CrossFade(idleState, 0.08f, 0, 0f);
+        }
+    }
+
+    private static string FindFirstAnimatorState(Animator animator, string[] candidates)
+    {
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            if (HasAnimatorState(animator, candidates[i]))
+            {
+                return candidates[i];
+            }
+        }
+
+        return null;
+    }
+
+    private static float GetAnimationClipLength(Animator animator, string clipName)
+    {
+        if (animator == null || animator.runtimeAnimatorController == null || string.IsNullOrEmpty(clipName))
+        {
+            return 0f;
+        }
+
+        AnimationClip[] clips = animator.runtimeAnimatorController.animationClips;
+        for (int i = 0; i < clips.Length; i++)
+        {
+            AnimationClip clip = clips[i];
+            if (clip != null && clip.name == clipName)
+            {
+                return clip.length;
+            }
+        }
+
+        return 0f;
+    }
+
+    private static bool HasAnimatorState(Animator animator, string stateName)
+    {
+        return animator != null && !string.IsNullOrEmpty(stateName) && animator.HasState(0, Animator.StringToHash(stateName));
     }
 
     private MicroNodeRobotFeedback GetActiveRobotFeedback()
