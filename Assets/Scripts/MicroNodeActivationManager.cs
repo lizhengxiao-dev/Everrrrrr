@@ -221,6 +221,13 @@ public class MicroNodeActivationManager : MonoBehaviour
             chargingStation.PulseFromNode(node.transform.position);
         }
 
+        if (capturedCount >= requiredCaptures)
+        {
+            UpdateHud();
+            StartCoroutine(EarlyRoundCompletionRoutine());
+            return;
+        }
+
         RefillOneNode();
         UpdateHud();
     }
@@ -417,6 +424,27 @@ public class MicroNodeActivationManager : MonoBehaviour
         EndSession();
         roundTransitionActive = false;
         finalizingSession = false;
+    }
+
+    private IEnumerator EarlyRoundCompletionRoutine()
+    {
+        if (roundTransitionActive || finalizingSession || sessionEnded)
+        {
+            yield break;
+        }
+
+        roundTransitionActive = true;
+
+        if (currentRound >= roundCount)
+        {
+            elapsedSessionTime = roundCount * roundDuration;
+            yield return EndSessionRoutine();
+            yield break;
+        }
+
+        int completedRound = currentRound;
+        elapsedSessionTime = Mathf.Max(elapsedSessionTime, completedRound * roundDuration);
+        yield return RoundTransitionRoutine(completedRound + 1);
     }
 
     private IEnumerator RoundTransitionRoutine(int nextRound)
