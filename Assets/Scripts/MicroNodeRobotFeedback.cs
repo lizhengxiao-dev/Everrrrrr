@@ -134,7 +134,10 @@ public class MicroNodeRobotFeedback : MonoBehaviour
             yield return new WaitForSeconds(precisionDuration - visibleFeedbackDuration);
         }
 
-        KeepRobotIdle();
+        if (!UseGestureSprites())
+        {
+            KeepRobotIdle();
+        }
 
         feedbackRoutine = null;
     }
@@ -153,6 +156,12 @@ public class MicroNodeRobotFeedback : MonoBehaviour
 
     private void KeepRobotIdle()
     {
+        if (UseGestureSprites())
+        {
+            ApplyGestureFrame();
+            return;
+        }
+
         if (animator == null || string.IsNullOrEmpty(idleStateName))
         {
             return;

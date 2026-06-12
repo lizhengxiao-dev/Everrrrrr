@@ -295,6 +295,14 @@ public static class MicroNodeActivationGenerator
             EditorUtility.SetDirty(spriteRenderer);
         }
 
+        if (usesGestureSprites && idleState.StartsWith("Male", StringComparison.OrdinalIgnoreCase))
+        {
+            Vector3 scale = robot.transform.localScale;
+            robot.transform.localScale = new Vector3(scale.x * 1.05f, scale.y * 1.426f, scale.z);
+            robot.transform.position += new Vector3(-0.12f, -0.37f, 0f);
+            EditorUtility.SetDirty(robot.transform);
+        }
+
         DestroyComponent<RobotAnimationController>(robot);
         DestroyComponent<ShieldManager>(robot);
         DestroyComponent<PushShieldVfx>(robot);
