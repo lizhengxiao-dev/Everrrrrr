@@ -16,9 +16,7 @@ public class LaserSpawner : MonoBehaviour
     private static readonly Vector3 GameplayRobotPosition = new Vector3(0.1f, -0.92f, 0f);
     private static readonly Vector3 GameplayRobotScale = new Vector3(0.7f, 0.435f, 1f);
     private const float RobotChestOffsetY = 0.75f;
-    private const float SideCannonEdgeInset = 1.12f;
-    private const float SideCannonY = -0.78f;
-    private const float TopCannonTopInset = 0.38f;
+    private const float CannonEdgePadding = 0.18f;
 
     [Header("Scene References")]
     [Tooltip("Laser prefab created from the hierarchy.")]
@@ -208,9 +206,12 @@ public class LaserSpawner : MonoBehaviour
             robotTarget.localScale = GameplayRobotScale;
         }
 
-        Vector3 leftPosition = new Vector3(-halfWidth + SideCannonEdgeInset, SideCannonY, 0f);
-        Vector3 rightPosition = new Vector3(halfWidth - SideCannonEdgeInset, SideCannonY, 0f);
-        Vector3 topPosition = new Vector3(GameplayRobotPosition.x, halfHeight - TopCannonTopInset, 0f);
+        float sideInset = cannonWorldLength * 0.5f + CannonEdgePadding;
+        float topInset = cannonWorldLength * 0.5f + CannonEdgePadding;
+
+        Vector3 leftPosition = new Vector3(-halfWidth + sideInset, 0f, 0f);
+        Vector3 rightPosition = new Vector3(halfWidth - sideInset, 0f, 0f);
+        Vector3 topPosition = new Vector3(0f, halfHeight - topInset, 0f);
         Vector3 chestPosition = GameplayRobotPosition + new Vector3(0f, RobotChestOffsetY * GameplayRobotScale.y, 0f);
 
         SetupCannonVisual(cannonLeft, leftPosition, GetAimAngleZ(leftPosition, chestPosition), new Color32(0, 255, 255, 255));
