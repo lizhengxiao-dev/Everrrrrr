@@ -123,8 +123,7 @@ public static class MicroNodeActivationGenerator
         clip.name = clipName;
         clip.frameRate = 30f;
 
-        const int targetFrameCount = 24;
-        int frameCount = Mathf.Min(targetFrameCount, sourceSprites.Count);
+        int frameCount = sourceSprites.Count;
         ObjectReferenceKeyframe[] frames = new ObjectReferenceKeyframe[frameCount];
 
         for (int i = 0; i < frameCount; i++)
