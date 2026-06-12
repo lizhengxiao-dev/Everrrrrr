@@ -19,6 +19,8 @@ public static class MicroNodeActivationGenerator
     private const string BackgroundPath = "Assets/MedicalRoom_Background.png";
     private const string EndDialogueArtworkPath = GeneratedFolder + "/EndDialogueFull.png";
     private const string IntroDialogueArtworkPath = GeneratedFolder + "/IntroDialogueFull.png";
+    private const string FemaleEndDialogueArtworkPath = GeneratedFolder + "/FemaleEndDialogueFull.png";
+    private const string FemaleIntroDialogueArtworkPath = GeneratedFolder + "/FemaleIntroDialogueFull.png";
     private const string PrecisionHeaderArtworkPath = GeneratedFolder + "/PrecisionHeaderFull.png";
     private const string PrecisionRestoredArtworkPath = GeneratedFolder + "/PrecisionRestoredPanel.png";
     private const string BottomHudArtworkPath = GeneratedFolder + "/BottomHudFull.png";
@@ -473,6 +475,10 @@ public static class MicroNodeActivationGenerator
         manager.roundTransitionText = FindSceneComponent<Text>("Text_RoundTransition");
         manager.gameClearPanel = clearPanel;
         manager.gameOverPanel = null;
+        manager.maleStorySprite = LoadSprite(IntroDialogueArtworkPath);
+        manager.femaleStorySprite = LoadSprite(FemaleIntroDialogueArtworkPath) ?? manager.maleStorySprite;
+        manager.maleEndDialogueSprite = LoadSprite(EndDialogueArtworkPath);
+        manager.femaleEndDialogueSprite = LoadSprite(FemaleEndDialogueArtworkPath) ?? manager.maleEndDialogueSprite;
         manager.maleRobot = FindSceneObject("Male0001");
         manager.femaleRobot = FindSceneObject("Female0001");
 

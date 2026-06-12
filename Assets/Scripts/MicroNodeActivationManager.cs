@@ -51,6 +51,10 @@ public class MicroNodeActivationManager : MonoBehaviour
     public Text roundTransitionText;
     public GameObject gameClearPanel;
     public GameObject gameOverPanel;
+    public Sprite maleStorySprite;
+    public Sprite femaleStorySprite;
+    public Sprite maleEndDialogueSprite;
+    public Sprite femaleEndDialogueSprite;
 
     [Header("Runtime World UI Tuning")]
     public Vector2 titleFrameOffset = Vector2.zero;
@@ -122,13 +126,7 @@ public class MicroNodeActivationManager : MonoBehaviour
         finalizingSession = false;
 
         EverMotionUIPolisher.ApplyPolish();
-        EverMotionCountdownOverlay.PolishStoryPanel(
-            storyPanel,
-            "MICRO NODE ACTIVATION // PRECISION SYSTEM OFFLINE",
-            "Tiny power cells are flickering across the circuit field. Move your hand to a node and pinch to send power back into the robot fingertips.",
-            "Mission cue: pinch one calm target at a time. Each minute gently increases the challenge.",
-            new Color(0.25f, 1f, 0.85f, 1f)
-        );
+        ApplyDialogueArtwork(femaleRobot != null && femaleRobot.activeSelf);
         SetPanelVisible(storyPanel, !sessionStarted);
         SetPanelVisible(gameClearPanel, false);
         SetPanelVisible(gameOverPanel, false);
@@ -383,6 +381,7 @@ public class MicroNodeActivationManager : MonoBehaviour
         SetPanelVisible(gameOverPanel, false);
         MicroNodeRobotFeedback activeFeedback = GetActiveRobotFeedback();
         Sprite portraitSprite = activeFeedback != null ? activeFeedback.GetRestingSprite() : null;
+        ApplyDialogueArtwork(femaleRobot != null && femaleRobot.activeInHierarchy);
         SetEndPanelText(
             gameClearPanel,
             "ROBOT",
@@ -1195,6 +1194,8 @@ public class MicroNodeActivationManager : MonoBehaviour
         {
             chargingStation.SetRobotTarget(GetActiveRobotTransform());
         }
+
+        ApplyDialogueArtwork(useFemale);
     }
 
     private void ClearActiveNodes()
@@ -1310,12 +1311,53 @@ public class MicroNodeActivationManager : MonoBehaviour
     {
         if (panel != null)
         {
+            CanvasGroup group = panel.GetComponent<CanvasGroup>();
+            if (group != null)
+            {
+                group.alpha = visible ? 1f : 0f;
+                group.interactable = false;
+                group.blocksRaycasts = false;
+            }
+
             if (visible)
             {
                 panel.transform.SetAsLastSibling();
             }
 
             panel.SetActive(visible);
+        }
+    }
+
+    private void ApplyDialogueArtwork(bool useFemale)
+    {
+        Sprite storySprite = useFemale && femaleStorySprite != null ? femaleStorySprite : maleStorySprite;
+        if (storyPanel != null && storySprite != null)
+        {
+            Image storyImage = storyPanel.GetComponent<Image>();
+            if (storyImage != null)
+            {
+                storyImage.sprite = storySprite;
+                storyImage.color = Color.white;
+                storyImage.preserveAspect = true;
+                storyImage.raycastTarget = false;
+            }
+
+            Outline outline = storyPanel.GetComponent<Outline>();
+            if (outline != null)
+            {
+                outline.enabled = false;
+            }
+        }
+
+        Sprite endSprite = useFemale && femaleEndDialogueSprite != null
+            ? femaleEndDialogueSprite
+            : maleEndDialogueSprite;
+        MicroNodeEndDialogueAnimator dialogue = gameClearPanel != null
+            ? gameClearPanel.GetComponent<MicroNodeEndDialogueAnimator>()
+            : null;
+        if (dialogue != null && endSprite != null)
+        {
+            dialogue.fullDialogueSprite = endSprite;
         }
     }
 
