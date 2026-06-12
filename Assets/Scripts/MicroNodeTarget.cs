@@ -86,34 +86,25 @@ public class MicroNodeTarget : MonoBehaviour
             return nodeSprite;
         }
 
-        const int size = 128;
+        const int size = 96;
         Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
         texture.name = "Runtime_MicroNode";
         texture.filterMode = FilterMode.Bilinear;
         texture.wrapMode = TextureWrapMode.Clamp;
 
         Vector2 center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
-        float radius = size * 0.46f;
+        float radius = size * 0.47f;
 
         for (int y = 0; y < size; y++)
         {
             for (int x = 0; x < size; x++)
             {
-                Vector2 pixel = new Vector2(x, y);
-                Vector2 delta = pixel - center;
-                float normalizedDistance = delta.magnitude / radius;
-                float angle = Mathf.Atan2(delta.y, delta.x);
-                float spoke = Mathf.Max(
-                    Mathf.Clamp01(1f - Mathf.Abs(Mathf.Sin(angle * 4f)) * 18f),
-                    Mathf.Clamp01(1f - Mathf.Abs(Mathf.Cos(angle * 4f)) * 18f)
-                );
-                float outerGlow = Mathf.Pow(Mathf.Clamp01(1f - normalizedDistance), 1.45f);
-                float outerRing = Mathf.Clamp01(1f - Mathf.Abs(normalizedDistance - 0.78f) * 26f);
-                float innerRing = Mathf.Clamp01(1f - Mathf.Abs(normalizedDistance - 0.43f) * 22f);
-                float core = Mathf.Pow(Mathf.Clamp01(1f - normalizedDistance * 3.1f), 1.4f);
-                float tickMask = normalizedDistance > 0.52f && normalizedDistance < 0.9f ? spoke * 0.55f : 0f;
-                float alpha = Mathf.Clamp01(outerGlow * 0.28f + outerRing + innerRing * 0.72f + core + tickMask);
-                Color color = new Color(0.58f + core * 0.42f, 0.9f + core * 0.1f, 1f, alpha);
+                float normalizedDistance = Vector2.Distance(new Vector2(x, y), center) / radius;
+                float outerGlow = Mathf.Clamp01(1f - normalizedDistance);
+                float ring = Mathf.Clamp01(1f - Mathf.Abs(normalizedDistance - 0.67f) * 18f);
+                float core = Mathf.Clamp01(1f - normalizedDistance * 2.7f);
+                float alpha = Mathf.Clamp01(outerGlow * 0.32f + ring * 0.92f + core);
+                Color color = new Color(0.72f + core * 0.28f, 1f, 1f, alpha);
                 texture.SetPixel(x, y, color);
             }
         }
