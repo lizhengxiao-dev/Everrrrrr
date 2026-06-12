@@ -279,10 +279,20 @@ public static class MicroNodeActivationGenerator
         }
 
         Animator animator = robot.GetComponent<Animator>();
+        bool usesGestureSprites = gestureSprites != null && gestureSprites.Count > 0;
         if (animator != null)
         {
             animator.runtimeAnimatorController = controller;
             animator.speed = 1f;
+            animator.enabled = !usesGestureSprites;
+            EditorUtility.SetDirty(animator);
+        }
+
+        SpriteRenderer spriteRenderer = robot.GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null && usesGestureSprites)
+        {
+            spriteRenderer.sprite = gestureSprites[0];
+            EditorUtility.SetDirty(spriteRenderer);
         }
 
         DestroyComponent<RobotAnimationController>(robot);
@@ -303,7 +313,7 @@ public static class MicroNodeActivationGenerator
 
         feedback.idleStateName = idleState;
         feedback.precisionStateName = precisionState;
-        feedback.useGestureSynchronizedSprites = gestureSprites != null && gestureSprites.Count > 0;
+        feedback.useGestureSynchronizedSprites = usesGestureSprites;
         feedback.gestureSprites = gestureSprites != null ? gestureSprites.ToArray() : Array.Empty<Sprite>();
         feedback.fingertipGlowLocalPosition = fingertipPosition;
         feedback.sortingOrder = 165;
