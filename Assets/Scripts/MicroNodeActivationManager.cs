@@ -70,6 +70,8 @@ public class MicroNodeActivationManager : MonoBehaviour
     private bool sessionStarting;
     private bool roundTransitionActive;
     private static Material circuitLineMaterial;
+    private Text titleFrameTimerText;
+    private Text titleFrameRoundText;
 
     public int CurrentRound => currentRound;
     public int CapturedCount => capturedCount;
@@ -438,6 +440,10 @@ public class MicroNodeActivationManager : MonoBehaviour
         {
             int secondsTotal = Mathf.CeilToInt(remaining);
             timerText.text = (secondsTotal / 60).ToString("00") + ":" + (secondsTotal % 60).ToString("00");
+            if (titleFrameTimerText != null)
+            {
+                titleFrameTimerText.text = timerText.text;
+            }
         }
 
         if (counterText != null)
@@ -469,6 +475,10 @@ public class MicroNodeActivationManager : MonoBehaviour
         if (roundText != null)
         {
             roundText.text = "ROUND " + currentRound + " / " + roundCount;
+            if (titleFrameRoundText != null)
+            {
+                titleFrameRoundText.text = currentRound + "/" + roundCount;
+            }
         }
 
         if (systemStatusText != null)
@@ -600,6 +610,7 @@ public class MicroNodeActivationManager : MonoBehaviour
 
         nodeRoot = rootObject.transform;
         EnsureCircuitField();
+        EnsureTopTitleFrame();
 
         if (chargingStation == null)
         {
@@ -632,6 +643,69 @@ public class MicroNodeActivationManager : MonoBehaviour
             cursorRenderer.sortingOrder = 190;
             cursorRenderer.color = new Color(0f, 1f, 1f, 0.85f);
         }
+    }
+
+    private void EnsureTopTitleFrame()
+    {
+        Canvas canvas = Object.FindFirstObjectByType<Canvas>();
+        if (canvas == null)
+        {
+            return;
+        }
+
+        GameObject frame = FindSceneObject("MicroNode_TopTitleFrame");
+        if (frame == null)
+        {
+            frame = new GameObject("MicroNode_TopTitleFrame", typeof(RectTransform), typeof(Image), typeof(Outline));
+            frame.transform.SetParent(canvas.transform, false);
+        }
+
+        RectTransform frameRect = frame.GetComponent<RectTransform>();
+        frameRect.anchorMin = new Vector2(0.5f, 1f);
+        frameRect.anchorMax = new Vector2(0.5f, 1f);
+        frameRect.pivot = new Vector2(0.5f, 1f);
+        frameRect.anchoredPosition = new Vector2(0f, -12f);
+        frameRect.sizeDelta = new Vector2(520f, 126f);
+
+        Image frameImage = frame.GetComponent<Image>();
+        frameImage.color = new Color32(8, 9, 14, 205);
+        frameImage.raycastTarget = false;
+
+        Outline outline = frame.GetComponent<Outline>();
+        outline.effectColor = new Color32(0, 210, 255, 105);
+        outline.effectDistance = new Vector2(2f, -2f);
+
+        EnsureFrameText(frame.transform, "Text_MicroNodeFrameTitle", "MICRO NODE ACTIVATION", new Vector2(0f, -15f), new Vector2(480f, 32f), 24, TextAnchor.MiddleCenter, new Color32(230, 232, 240, 255));
+        EnsureFrameText(frame.transform, "Text_MicroNodeFrameSubtitle", "Precision System (Fingers)", new Vector2(0f, -43f), new Vector2(440f, 22f), 13, TextAnchor.MiddleCenter, new Color32(185, 190, 206, 255));
+        EnsureFrameText(frame.transform, "Text_MicroNodeFrameTimeLabel", "TIME REMAINING", new Vector2(-170f, -72f), new Vector2(150f, 18f), 10, TextAnchor.MiddleLeft, new Color32(150, 156, 174, 255));
+        EnsureFrameText(frame.transform, "Text_MicroNodeFrameRoundLabel", "ROUND", new Vector2(190f, -72f), new Vector2(90f, 18f), 10, TextAnchor.MiddleLeft, new Color32(150, 156, 174, 255));
+
+        titleFrameTimerText = EnsureFrameText(frame.transform, "Text_MicroNodeFrameTimer", "00:00", new Vector2(-150f, -96f), new Vector2(140f, 28f), 22, TextAnchor.MiddleLeft, new Color32(238, 239, 246, 255));
+        titleFrameRoundText = EnsureFrameText(frame.transform, "Text_MicroNodeFrameRound", "1/3", new Vector2(194f, -96f), new Vector2(82f, 28f), 22, TextAnchor.MiddleLeft, new Color32(238, 239, 246, 255));
+    }
+
+    private static Text EnsureFrameText(Transform parent, string name, string value, Vector2 position, Vector2 size, int fontSize, TextAnchor alignment, Color color)
+    {
+        Transform existing = parent.Find(name);
+        GameObject textObject = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(Text));
+        textObject.transform.SetParent(parent, false);
+
+        RectTransform rect = textObject.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+
+        Text text = textObject.GetComponent<Text>();
+        text.text = value;
+        text.font = text.font != null ? text.font : Resources.GetBuiltinResource<Font>("Arial.ttf");
+        text.fontSize = fontSize;
+        text.fontStyle = FontStyle.Bold;
+        text.alignment = alignment;
+        text.color = color;
+        text.raycastTarget = false;
+        return text;
     }
 
     private void EnsureCircuitField()
