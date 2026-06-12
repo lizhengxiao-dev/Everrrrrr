@@ -70,8 +70,9 @@ public class MicroNodeActivationManager : MonoBehaviour
     private bool sessionStarting;
     private bool roundTransitionActive;
     private static Material circuitLineMaterial;
-    private Text titleFrameTimerText;
-    private Text titleFrameRoundText;
+    private static Sprite titleFrameSprite;
+    private TextMesh titleFrameTimerText;
+    private TextMesh titleFrameRoundText;
 
     public int CurrentRound => currentRound;
     public int CapturedCount => capturedCount;
@@ -647,65 +648,114 @@ public class MicroNodeActivationManager : MonoBehaviour
 
     private void EnsureTopTitleFrame()
     {
-        Canvas canvas = Object.FindFirstObjectByType<Canvas>();
-        if (canvas == null)
+        GameObject oldCanvasFrame = FindSceneObject("MicroNode_TopTitleFrame");
+        if (oldCanvasFrame != null && oldCanvasFrame.GetComponent<RectTransform>() != null)
         {
-            return;
+            oldCanvasFrame.SetActive(false);
         }
 
-        GameObject frame = FindSceneObject("MicroNode_TopTitleFrame");
+        GameObject frame = FindSceneObject("MicroNode_TopTitleFrame_World");
         if (frame == null)
         {
-            frame = new GameObject("MicroNode_TopTitleFrame", typeof(RectTransform), typeof(Image), typeof(Outline));
-            frame.transform.SetParent(canvas.transform, false);
+            frame = new GameObject("MicroNode_TopTitleFrame_World");
         }
 
-        RectTransform frameRect = frame.GetComponent<RectTransform>();
-        frameRect.anchorMin = new Vector2(0.5f, 1f);
-        frameRect.anchorMax = new Vector2(0.5f, 1f);
-        frameRect.pivot = new Vector2(0.5f, 1f);
-        frameRect.anchoredPosition = new Vector2(0f, -12f);
-        frameRect.sizeDelta = new Vector2(520f, 126f);
+        frame.transform.position = GetTitleFrameWorldPosition();
+        frame.transform.rotation = Quaternion.identity;
+        frame.transform.localScale = Vector3.one;
 
-        Image frameImage = frame.GetComponent<Image>();
-        frameImage.color = new Color32(8, 9, 14, 205);
-        frameImage.raycastTarget = false;
+        SpriteRenderer frameRenderer = frame.GetComponent<SpriteRenderer>();
+        if (frameRenderer == null)
+        {
+            frameRenderer = frame.AddComponent<SpriteRenderer>();
+        }
+        frameRenderer.sprite = GetTitleFrameSprite();
+        frameRenderer.color = new Color32(8, 9, 14, 215);
+        frameRenderer.sortingOrder = 220;
+        frame.transform.localScale = new Vector3(5.2f, 1.24f, 1f);
 
-        Outline outline = frame.GetComponent<Outline>();
-        outline.effectColor = new Color32(0, 210, 255, 105);
-        outline.effectDistance = new Vector2(2f, -2f);
+        EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameTitle", "MICRO NODE ACTIVATION", new Vector3(0f, 0.36f, -0.02f), 0.038f, TextAnchor.MiddleCenter, new Color32(230, 232, 240, 255), 230);
+        EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameSubtitle", "Precision System (Fingers)", new Vector3(0f, 0.12f, -0.02f), 0.021f, TextAnchor.MiddleCenter, new Color32(185, 190, 206, 255), 230);
+        EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameTimeLabel", "TIME REMAINING", new Vector3(-1.7f, -0.22f, -0.02f), 0.017f, TextAnchor.MiddleLeft, new Color32(150, 156, 174, 255), 230);
+        EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameRoundLabel", "ROUND", new Vector3(1.74f, -0.22f, -0.02f), 0.017f, TextAnchor.MiddleLeft, new Color32(150, 156, 174, 255), 230);
 
-        EnsureFrameText(frame.transform, "Text_MicroNodeFrameTitle", "MICRO NODE ACTIVATION", new Vector2(0f, -15f), new Vector2(480f, 32f), 24, TextAnchor.MiddleCenter, new Color32(230, 232, 240, 255));
-        EnsureFrameText(frame.transform, "Text_MicroNodeFrameSubtitle", "Precision System (Fingers)", new Vector2(0f, -43f), new Vector2(440f, 22f), 13, TextAnchor.MiddleCenter, new Color32(185, 190, 206, 255));
-        EnsureFrameText(frame.transform, "Text_MicroNodeFrameTimeLabel", "TIME REMAINING", new Vector2(-170f, -72f), new Vector2(150f, 18f), 10, TextAnchor.MiddleLeft, new Color32(150, 156, 174, 255));
-        EnsureFrameText(frame.transform, "Text_MicroNodeFrameRoundLabel", "ROUND", new Vector2(190f, -72f), new Vector2(90f, 18f), 10, TextAnchor.MiddleLeft, new Color32(150, 156, 174, 255));
-
-        titleFrameTimerText = EnsureFrameText(frame.transform, "Text_MicroNodeFrameTimer", "00:00", new Vector2(-150f, -96f), new Vector2(140f, 28f), 22, TextAnchor.MiddleLeft, new Color32(238, 239, 246, 255));
-        titleFrameRoundText = EnsureFrameText(frame.transform, "Text_MicroNodeFrameRound", "1/3", new Vector2(194f, -96f), new Vector2(82f, 28f), 22, TextAnchor.MiddleLeft, new Color32(238, 239, 246, 255));
+        titleFrameTimerText = EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameTimer", "00:00", new Vector3(-1.7f, -0.46f, -0.02f), 0.036f, TextAnchor.MiddleLeft, new Color32(238, 239, 246, 255), 231);
+        titleFrameRoundText = EnsureWorldFrameText(frame.transform, "Text_MicroNodeFrameRound", "1/3", new Vector3(1.74f, -0.46f, -0.02f), 0.036f, TextAnchor.MiddleLeft, new Color32(238, 239, 246, 255), 231);
     }
 
-    private static Text EnsureFrameText(Transform parent, string name, string value, Vector2 position, Vector2 size, int fontSize, TextAnchor alignment, Color color)
+    private static Vector3 GetTitleFrameWorldPosition()
+    {
+        SpriteRenderer background = FindSceneComponent<SpriteRenderer>("CyberBackground_WORLD");
+        if (background != null)
+        {
+            Bounds bounds = background.bounds;
+            return new Vector3(bounds.center.x, bounds.max.y - 0.46f, -0.2f);
+        }
+
+        Camera camera = Camera.main;
+        float top = camera != null && camera.orthographic
+            ? camera.transform.position.y + camera.orthographicSize
+            : 4.5f;
+        return new Vector3(0f, top - 0.6f, -0.2f);
+    }
+
+    private static TextMesh EnsureWorldFrameText(Transform parent, string name, string value, Vector3 localPosition, float characterSize, TextAnchor alignment, Color color, int sortingOrder)
     {
         Transform existing = parent.Find(name);
-        GameObject textObject = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(Text));
+        GameObject textObject = existing != null ? existing.gameObject : new GameObject(name);
         textObject.transform.SetParent(parent, false);
+        textObject.transform.localPosition = localPosition;
+        textObject.transform.localRotation = Quaternion.identity;
+        textObject.transform.localScale = Vector3.one;
 
-        RectTransform rect = textObject.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 1f);
-        rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = position;
-        rect.sizeDelta = size;
-
-        Text text = textObject.GetComponent<Text>();
+        TextMesh text = textObject.GetComponent<TextMesh>();
+        if (text == null)
+        {
+            text = textObject.AddComponent<TextMesh>();
+        }
         text.text = value;
-        text.font = text.font != null ? text.font : Resources.GetBuiltinResource<Font>("Arial.ttf");
-        text.fontSize = fontSize;
+        text.fontSize = 64;
+        text.characterSize = characterSize;
         text.fontStyle = FontStyle.Bold;
-        text.alignment = alignment;
+        text.anchor = alignment;
+        text.alignment = GetTextAlignment(alignment);
         text.color = color;
-        text.raycastTarget = false;
+
+        MeshRenderer renderer = textObject.GetComponent<MeshRenderer>();
+        renderer.sortingOrder = sortingOrder;
         return text;
+    }
+
+    private static TextAlignment GetTextAlignment(TextAnchor anchor)
+    {
+        switch (anchor)
+        {
+            case TextAnchor.LowerLeft:
+            case TextAnchor.MiddleLeft:
+            case TextAnchor.UpperLeft:
+                return TextAlignment.Left;
+            case TextAnchor.LowerRight:
+            case TextAnchor.MiddleRight:
+            case TextAnchor.UpperRight:
+                return TextAlignment.Right;
+            default:
+                return TextAlignment.Center;
+        }
+    }
+
+    private static Sprite GetTitleFrameSprite()
+    {
+        if (titleFrameSprite != null)
+        {
+            return titleFrameSprite;
+        }
+
+        Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+        texture.SetPixels(new[] { Color.white, Color.white, Color.white, Color.white });
+        texture.Apply();
+        titleFrameSprite = Sprite.Create(texture, new Rect(0f, 0f, 2f, 2f), new Vector2(0.5f, 0.5f), 2f);
+        titleFrameSprite.name = "Runtime_MicroNodeTitleFrame";
+        return titleFrameSprite;
     }
 
     private void EnsureCircuitField()
