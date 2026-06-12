@@ -420,6 +420,7 @@ public static class MicroNodeActivationGenerator
             throw new InvalidOperationException("Micro Node scene needs the existing EverMotion Canvas.");
         }
 
+        RemoveLegacyHudObjects();
         GameObject clearPanel = EnsureEndPanel(canvas.transform, "Panel_GameClear", "PRECISION RESTORED", new Color32(0, 255, 255, 205));
         DestroySceneObject("Panel_GameOver");
         Image[] roundIndicators = EnsurePrecisionHeader(canvas.transform);
@@ -491,6 +492,26 @@ public static class MicroNodeActivationGenerator
         EditorUtility.SetDirty(manager);
     }
 
+    private static void RemoveLegacyHudObjects()
+    {
+        string[] oldHudNames =
+        {
+            "HUD_Base_IMG",
+            "HUD_Bottom_GlassPanel",
+            "Panel_Timer",
+            "Panel_TargetCounter",
+            "Text_BlockCounter",
+            "Text_BlocksCounter",
+            "Text_Blocks",
+            "Text_BlockLabel"
+        };
+
+        for (int i = 0; i < oldHudNames.Length; i++)
+        {
+            DestroySceneObject(oldHudNames[i]);
+        }
+    }
+
     private static Image[] EnsurePrecisionHeader(Transform canvas)
     {
         GameObject header = FindSceneObject("MicroNode_PrecisionHeader");
@@ -523,38 +544,9 @@ public static class MicroNodeActivationGenerator
         headerOutline.effectDistance = Vector2.zero;
         headerOutline.enabled = false;
 
-        EnsureHeaderText(
-            header.transform,
-            "Text_PrecisionTitle",
-            "PRECISION SYSTEM",
-            new Vector2(-322f, -6f),
-            new Vector2(330f, 52f),
-            27,
-            TextAnchor.MiddleLeft,
-            new Color32(225, 249, 255, 255)
-        );
-
-        EnsureHeaderText(
-            header.transform,
-            "Text_Round",
-            "ROUND 1 / 3",
-            new Vector2(0f, -4f),
-            new Vector2(260f, 58f),
-            31,
-            TextAnchor.MiddleCenter,
-            new Color32(255, 255, 255, 255)
-        );
-
-        EnsureHeaderText(
-            header.transform,
-            "Text_PrecisionStatus",
-            "AWAITING HAND LINK",
-            new Vector2(322f, -6f),
-            new Vector2(340f, 52f),
-            25,
-            TextAnchor.MiddleRight,
-            new Color32(255, 200, 64, 255)
-        );
+        DestroyChild(header.transform, "Text_PrecisionTitle");
+        DestroyChild(header.transform, "Text_Round");
+        DestroyChild(header.transform, "Text_PrecisionStatus");
 
         Image[] indicators = new Image[3];
         for (int i = 0; i < indicators.Length; i++)
@@ -575,9 +567,7 @@ public static class MicroNodeActivationGenerator
 
             indicators[i] = indicatorObject.GetComponent<Image>();
             indicators[i].raycastTarget = false;
-            indicators[i].color = i == 0
-                ? new Color32(0, 242, 255, 255)
-                : new Color32(42, 92, 108, 120);
+            indicators[i].enabled = false;
         }
 
         return indicators;
@@ -614,6 +604,42 @@ public static class MicroNodeActivationGenerator
         }
 
         Slider energyBar = FindSceneComponent<Slider>("EnergyBar");
+        if (energyBar == null)
+        {
+            GameObject sliderObject = new GameObject("EnergyBar", typeof(RectTransform), typeof(Slider));
+            sliderObject.transform.SetParent(hud.transform, false);
+            energyBar = sliderObject.GetComponent<Slider>();
+
+            GameObject backgroundObject = new GameObject("Background", typeof(RectTransform), typeof(Image));
+            backgroundObject.transform.SetParent(sliderObject.transform, false);
+            RectTransform backgroundRect = backgroundObject.GetComponent<RectTransform>();
+            backgroundRect.anchorMin = Vector2.zero;
+            backgroundRect.anchorMax = Vector2.one;
+            backgroundRect.offsetMin = Vector2.zero;
+            backgroundRect.offsetMax = Vector2.zero;
+
+            GameObject fillAreaObject = new GameObject("Fill Area", typeof(RectTransform));
+            fillAreaObject.transform.SetParent(sliderObject.transform, false);
+            RectTransform fillAreaRect = fillAreaObject.GetComponent<RectTransform>();
+            fillAreaRect.anchorMin = Vector2.zero;
+            fillAreaRect.anchorMax = Vector2.one;
+            fillAreaRect.offsetMin = new Vector2(4f, 4f);
+            fillAreaRect.offsetMax = new Vector2(-4f, -4f);
+
+            GameObject fillObject = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fillObject.transform.SetParent(fillAreaObject.transform, false);
+            RectTransform fillRect = fillObject.GetComponent<RectTransform>();
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+
+            energyBar.targetGraphic = fillObject.GetComponent<Image>();
+            energyBar.fillRect = fillRect;
+            energyBar.direction = Slider.Direction.LeftToRight;
+            energyBar.interactable = false;
+            energyBar.transition = Selectable.Transition.None;
+        }
         if (energyBar != null)
         {
             energyBar.transform.SetParent(hud.transform, false);
