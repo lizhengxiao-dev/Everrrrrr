@@ -1310,6 +1310,11 @@ public class MicroNodeActivationManager : MonoBehaviour
     {
         if (panel != null)
         {
+            if (visible)
+            {
+                panel.transform.SetAsLastSibling();
+            }
+
             panel.SetActive(visible);
         }
     }

@@ -17,6 +17,7 @@ public static class MicroNodeActivationGenerator
     private const string GeneratedFolder = "Assets/MicroNodeActivation";
     private const string PinchSpritesFolder = GeneratedFolder + "/PinchSprites";
     private const string BackgroundPath = "Assets/MedicalRoom_Background.png";
+    private const string EndDialogueArtworkPath = GeneratedFolder + "/EndDialogueFull.png";
     private const string EndDialogueMessage = "\"Thank you... I can feel my fingers responding again. Keep going - we're making progress!\"";
 
     [MenuItem("EverMotion/Micro Node Activation - Build Scene")]
@@ -736,6 +737,7 @@ public static class MicroNodeActivationGenerator
                 typeof(RectTransform),
                 typeof(Image),
                 typeof(Outline),
+                typeof(Canvas),
                 typeof(CanvasGroup),
                 typeof(MicroNodeEndDialogueAnimator)
             );
@@ -753,13 +755,20 @@ public static class MicroNodeActivationGenerator
         {
             panel.AddComponent<CanvasGroup>();
         }
+        Canvas panelCanvas = panel.GetComponent<Canvas>();
+        if (panelCanvas == null)
+        {
+            panelCanvas = panel.AddComponent<Canvas>();
+        }
+        panelCanvas.overrideSorting = true;
+        panelCanvas.sortingOrder = 5000;
 
         RectTransform panelRect = panel.GetComponent<RectTransform>();
         panelRect.anchorMin = new Vector2(0.5f, 0.5f);
         panelRect.anchorMax = new Vector2(0.5f, 0.5f);
         panelRect.pivot = new Vector2(0.5f, 0.5f);
-        panelRect.anchoredPosition = new Vector2(0f, -58f);
-        panelRect.sizeDelta = new Vector2(1040f, 390f);
+        panelRect.anchoredPosition = new Vector2(0f, 8f);
+        panelRect.sizeDelta = new Vector2(980f, 300f);
 
         Image image = panel.GetComponent<Image>();
         image.color = new Color32(5, 18, 30, 225);
@@ -777,23 +786,28 @@ public static class MicroNodeActivationGenerator
         }
         dialogue.speaker = title == "PRECISION RESTORED" ? "ROBOT" : title;
         dialogue.message = EndDialogueMessage;
-        dialogue.robotPortraitSprite = LoadDefaultDialoguePortrait();
+        dialogue.fullDialogueSprite = LoadSprite(EndDialogueArtworkPath);
+        dialogue.panelSize = new Vector2(980f, 300f);
+        dialogue.panelOffset = new Vector2(0f, 8f);
         EditorUtility.SetDirty(dialogue);
 
         DestroyChild(panel.transform, name + "_Title");
         DestroyChild(panel.transform, name + "_Subtitle");
-        return panel;
-    }
-
-    private static Sprite LoadDefaultDialoguePortrait()
-    {
-        Sprite portrait = GetSprites(PinchSpritesFolder + "/Male").FirstOrDefault();
-        if (portrait != null)
+        DestroyChild(panel.transform, "DialogueRobotPortrait");
+        DestroyChild(panel.transform, "DialogueSpeakerText");
+        DestroyChild(panel.transform, "DialogueBodyText");
+        DestroyChild(panel.transform, "DialogueHintText");
+        DestroyChild(panel.transform, "DialogueDivider");
+        DestroyChild(panel.transform, "DialogueScanLine");
+        DestroyChild(panel.transform, "DialogueFullGlow");
+        DestroyChild(panel.transform, "DialogueFullArtwork");
+        DestroyChild(panel.transform, "DialogueFullScan");
+        for (int i = 0; i < 16; i++)
         {
-            return portrait;
+            DestroyChild(panel.transform, "DialogueWaveBar_" + i.ToString("00"));
         }
-
-        return LoadSprite("Assets/NewRobotGame/Male/Idle/Male0001.png");
+        panel.transform.SetAsLastSibling();
+        return panel;
     }
 
     private static void EnsurePanelText(Transform panel, string name, string value, Vector2 position, int fontSize)
