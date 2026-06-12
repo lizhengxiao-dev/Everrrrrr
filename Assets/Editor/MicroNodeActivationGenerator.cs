@@ -28,6 +28,8 @@ public static class MicroNodeActivationGenerator
 
         List<Sprite> malePinchSprites = GetSprites(PinchSpritesFolder + "/Male");
         List<Sprite> femalePinchSprites = GetSprites(PinchSpritesFolder + "/Female");
+        List<Sprite> malePoweredUpSprites = GetSprites("Assets/NewRobotGame/Male/PoweredUp");
+        List<Sprite> femalePoweredUpSprites = GetSprites("Assets/NewRobotGame/Female/PoweredUp");
         AnimatorController maleController = BuildRobotController("Male", malePinchSprites);
         AnimatorController femaleController = BuildRobotController("Female", femalePinchSprites);
 
@@ -37,7 +39,14 @@ public static class MicroNodeActivationGenerator
 
         DisableOldGameplay();
         ConfigureMedicalBackground();
-        ConfigureRobots(maleController, femaleController, malePinchSprites, femalePinchSprites);
+        ConfigureRobots(
+            maleController,
+            femaleController,
+            malePinchSprites,
+            femalePinchSprites,
+            malePoweredUpSprites,
+            femalePoweredUpSprites
+        );
         ConfigureHandInput();
         ConfigureHudAndManager();
         EnsureSceneInBuildSettings();
@@ -232,7 +241,9 @@ public static class MicroNodeActivationGenerator
         AnimatorController maleController,
         AnimatorController femaleController,
         List<Sprite> malePinchSprites,
-        List<Sprite> femalePinchSprites)
+        List<Sprite> femalePinchSprites,
+        List<Sprite> malePoweredUpSprites,
+        List<Sprite> femalePoweredUpSprites)
     {
         ConfigureRobot(
             FindSceneObject("Male0001"),
@@ -240,7 +251,8 @@ public static class MicroNodeActivationGenerator
             "Male_Idle",
             "Male_PrecisionActivate",
             new Vector3(1.55f, 0.7f, -0.08f),
-            malePinchSprites
+            malePinchSprites,
+            malePoweredUpSprites
         );
 
         ConfigureRobot(
@@ -249,7 +261,8 @@ public static class MicroNodeActivationGenerator
             "Female_Idle",
             "Female_PrecisionActivate",
             new Vector3(1.35f, 0.72f, -0.08f),
-            femalePinchSprites
+            femalePinchSprites,
+            femalePoweredUpSprites
         );
 
         GameObject male = FindSceneObject("Male0001");
@@ -271,7 +284,8 @@ public static class MicroNodeActivationGenerator
         string idleState,
         string precisionState,
         Vector3 fingertipPosition,
-        List<Sprite> gestureSprites)
+        List<Sprite> gestureSprites,
+        List<Sprite> poweredUpSprites)
     {
         if (robot == null)
         {
@@ -323,6 +337,7 @@ public static class MicroNodeActivationGenerator
         feedback.precisionStateName = precisionState;
         feedback.useGestureSynchronizedSprites = usesGestureSprites;
         feedback.gestureSprites = gestureSprites != null ? gestureSprites.ToArray() : Array.Empty<Sprite>();
+        feedback.poweredUpSprites = poweredUpSprites != null ? poweredUpSprites.ToArray() : Array.Empty<Sprite>();
         feedback.fingertipGlowLocalPosition = fingertipPosition;
         feedback.sortingOrder = 165;
         EditorUtility.SetDirty(robot);

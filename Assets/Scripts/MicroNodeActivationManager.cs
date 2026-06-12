@@ -1038,6 +1038,13 @@ public class MicroNodeActivationManager : MonoBehaviour
 
     private IEnumerator PlayRoundPowerUpRoutine()
     {
+        MicroNodeRobotFeedback feedback = GetActiveRobotFeedback();
+        if (feedback != null && feedback.HasPoweredUpCelebration())
+        {
+            yield return feedback.PlayPoweredUpCelebration();
+            yield break;
+        }
+
         Transform robotTransform = GetActiveRobotTransform();
         GameObject robot = robotTransform != null ? robotTransform.gameObject : null;
         Animator animator = robot != null ? robot.GetComponent<Animator>() : null;

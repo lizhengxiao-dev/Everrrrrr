@@ -8,9 +8,11 @@ public class MicroNodeRobotFeedback : MonoBehaviour
     public string precisionStateName = "Male_PrecisionActivate";
     public bool useGestureSynchronizedSprites = true;
     public Sprite[] gestureSprites;
+    public Sprite[] poweredUpSprites;
     public HandTracker handTracker;
     public float pinchAdvanceSpeed = 28f;
     public float releaseAdvanceSpeed = 24f;
+    public float poweredUpFrameRate = 30f;
     public Vector3 fingertipGlowLocalPosition = new Vector3(1.55f, 0.7f, -0.08f);
     public int sortingOrder = 165;
 
@@ -20,7 +22,9 @@ public class MicroNodeRobotFeedback : MonoBehaviour
     private SpriteRenderer glowRenderer;
     private GameObject travelingBurst;
     private Coroutine feedbackRoutine;
+    private Coroutine celebrationRoutine;
     private float gesture01;
+    private bool isCelebrating;
     private static Sprite glowSprite;
 
     private void Awake()
@@ -55,6 +59,11 @@ public class MicroNodeRobotFeedback : MonoBehaviour
             return;
         }
 
+        if (isCelebrating)
+        {
+            return;
+        }
+
         bool isPinching = handTracker != null && handTracker.HasRecentMessage() && handTracker.IsPinching();
         float target = isPinching ? 1f : 0f;
         float speed = isPinching ? pinchAdvanceSpeed : releaseAdvanceSpeed;
@@ -82,6 +91,51 @@ public class MicroNodeRobotFeedback : MonoBehaviour
         }
 
         feedbackRoutine = StartCoroutine(ActivationRoutine(capturedNodeWorldPosition));
+    }
+
+    public bool HasPoweredUpCelebration()
+    {
+        return spriteRenderer != null && poweredUpSprites != null && poweredUpSprites.Length > 0;
+    }
+
+    public IEnumerator PlayPoweredUpCelebration()
+    {
+        if (!HasPoweredUpCelebration())
+        {
+            yield break;
+        }
+
+        if (celebrationRoutine != null)
+        {
+            StopCoroutine(celebrationRoutine);
+        }
+
+        celebrationRoutine = StartCoroutine(PoweredUpRoutine());
+        yield return celebrationRoutine;
+    }
+
+    private IEnumerator PoweredUpRoutine()
+    {
+        isCelebrating = true;
+        if (animator != null)
+        {
+            animator.enabled = false;
+        }
+
+        float secondsPerFrame = 1f / Mathf.Max(1f, poweredUpFrameRate);
+        for (int i = 0; i < poweredUpSprites.Length; i++)
+        {
+            if (poweredUpSprites[i] != null)
+            {
+                spriteRenderer.sprite = poweredUpSprites[i];
+            }
+            yield return new WaitForSeconds(secondsPerFrame);
+        }
+
+        gesture01 = 0f;
+        isCelebrating = false;
+        ApplyGestureFrame();
+        celebrationRoutine = null;
     }
 
     private IEnumerator ActivationRoutine(Vector3 capturedNodeWorldPosition)
