@@ -59,6 +59,10 @@ public class MicroNodeActivationManager : MonoBehaviour
     public Vector2 nodeStatusPanelOffset = Vector2.zero;
     [Range(0.65f, 1.45f)] public float nodeStatusPanelScale = 1f;
     [Range(0.65f, 1.65f)] public float nodeStatusFontScale = 1f;
+    public bool autoScaleWorldUi = true;
+    public Vector2 worldUiReferenceResolution = new Vector2(1024f, 768f);
+    [Range(0.45f, 1.2f)] public float worldUiMinAutoScale = 0.7f;
+    [Range(1f, 2f)] public float worldUiMaxAutoScale = 1.35f;
 
     [Header("Robots")]
     public GameObject maleRobot;
@@ -707,7 +711,7 @@ public class MicroNodeActivationManager : MonoBehaviour
 
         frame.transform.position = GetTitleFrameWorldPosition() + new Vector3(titleFrameOffset.x, titleFrameOffset.y, 0f);
         frame.transform.rotation = Quaternion.identity;
-        frame.transform.localScale = Vector3.one * titleFrameScale;
+        frame.transform.localScale = Vector3.one * titleFrameScale * GetWorldUiAutoScale();
 
         SpriteRenderer frameRenderer = frame.GetComponent<SpriteRenderer>();
         if (frameRenderer != null)
@@ -735,7 +739,7 @@ public class MicroNodeActivationManager : MonoBehaviour
 
         panel.transform.position = GetNodeStatusPanelWorldPosition() + new Vector3(nodeStatusPanelOffset.x, nodeStatusPanelOffset.y, 0f);
         panel.transform.rotation = Quaternion.identity;
-        panel.transform.localScale = Vector3.one * nodeStatusPanelScale;
+        panel.transform.localScale = Vector3.one * nodeStatusPanelScale * GetWorldUiAutoScale();
 
         SpriteRenderer rootRenderer = panel.GetComponent<SpriteRenderer>();
         if (rootRenderer != null)
@@ -841,6 +845,21 @@ public class MicroNodeActivationManager : MonoBehaviour
         }
 
         return new Vector3(6.1f, 3f, -0.2f);
+    }
+
+    private float GetWorldUiAutoScale()
+    {
+        if (!autoScaleWorldUi)
+        {
+            return 1f;
+        }
+
+        float referenceWidth = Mathf.Max(1f, worldUiReferenceResolution.x);
+        float referenceHeight = Mathf.Max(1f, worldUiReferenceResolution.y);
+        float currentWidth = Screen.width > 0 ? Screen.width : referenceWidth;
+        float currentHeight = Screen.height > 0 ? Screen.height : referenceHeight;
+        float scale = Mathf.Min(currentWidth / referenceWidth, currentHeight / referenceHeight);
+        return Mathf.Clamp(scale, worldUiMinAutoScale, worldUiMaxAutoScale);
     }
 
     private static SpriteRenderer EnsureWorldBlock(Transform parent, string name, Vector3 localPosition, Vector3 localScale, Color color, int sortingOrder)
